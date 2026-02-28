@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>David Chen Photography</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --font: 'DM Sans', sans-serif;
+    --black: #1a1a1a;
+    --white: #ffffff;
+    --gray: #888;
+    --gap: 7px;
+    --nav-height: 80px;
+  }
+  body { font-family: var(--font), sans-serif; color: var(--black); background: var(--white); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; z-index: 100; transition: background 0.3s, color 0.3s; }
+  nav.light { background: var(--white); color: var(--black); }
+  nav.dark { background: transparent; color: var(--white); }
+  .logo { display: flex; align-items: center; }
+  .logo-img { height: 40px; width: auto; object-fit: contain; transition: opacity 0.3s, height 0.3s; }
+  nav.large-logo .logo-img { height: 80px; }
+  nav.large-logo { height: 100px; }
+  .logo-img:hover { opacity: 0.7; }
+  nav.dark .logo-img { filter: brightness(0) invert(1); }
+
+  .nav-links { display: flex; align-items: center; gap: 48px; list-style: none; }
+  .nav-links a { font-size: 14px; font-weight: 400; letter-spacing: 1.5px; text-transform: capitalize; position: relative; padding-bottom: 2px; }
+  .nav-links a.active { border-bottom: 1px solid currentColor; }
+  .nav-links a:hover { opacity: 0.7; }
+  .nav-links .ig-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+  .hamburger { display: none; background: none; border: none; cursor: pointer; width: 28px; height: 20px; position: relative; z-index: 200; }
+  .hamburger span { display: block; width: 100%; height: 1.5px; background: currentColor; position: absolute; left: 0; transition: all 0.3s; }
+  .hamburger span:nth-child(1) { top: 0; }
+  .hamburger span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+  .hamburger span:nth-child(3) { bottom: 0; }
+  .hamburger.open span:nth-child(1) { top: 50%; transform: translateY(-50%) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { bottom: 50%; transform: translateY(50%) rotate(-45deg); }
+
+  .logo-overview { display: none; align-items: center; }
+  .logo-overview-img { height: 65px; width: auto; object-fit: contain; transition: opacity 0.3s; }
+  .logo-overview-img:hover { opacity: 0.7; }
+  nav.overview-nav .logo { display: none; }
+  nav.overview-nav .logo-overview { display: flex; }
+  nav.overview-nav { height: 100px; }
+  nav:not(.overview-nav) .logo { display: flex; }
+  nav:not(.overview-nav) .logo-overview { display: none; }
+
+  .section { display: none !important; }
+  .section.active { display: block !important; }
+  .section.contact-section.active { display: flex !important; }
+
+  .gallery-section { padding-left: 48px; padding-right: 48px; padding-bottom: 80px; padding-top: 0; }
+  .overview-gallery { padding-top: 120px; }
+  .masonry { columns: 4; column-gap: var(--gap); }
+  .masonry-item { break-inside: avoid; margin-bottom: var(--gap); cursor: pointer; overflow: hidden; position: relative; }
+  .masonry-item::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.9s ease 1s; pointer-events: none; }
+  .masonry-item:hover::after { background: rgba(0,0,0,0.35); }
+  .masonry-item img { width: 100%; height: auto; display: block; transition: transform 0.9s ease 1s; }
+  .masonry-item:hover img { transform: scale(1.105); }
+
+  .empty-gallery { padding: 80px 48px; text-align: center; color: #999; font-size: 15px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 600; justify-content: center; align-items: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--white); padding: 48px 40px; max-width: 460px; width: 90%; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
+  .modal-box p { font-size: 16px; font-weight: 400; color: var(--black); line-height: 1.7; margin-bottom: 28px; }
+  .modal-close { display: inline-block; padding: 14px 40px; background: var(--black); color: var(--white); font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.25s; }
+  .modal-close:hover { background: #333; }
+
+  .contact-section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; align-items: center; justify-content: center; background: var(--white); }
+  .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; padding: 120px 48px 80px; max-width: 1400px; align-items: start; margin: 0 auto; }
+  .contact-form-side { width: 100%; padding-top: 80px; }
+  .contact-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
+  .contact-photo-side img { width: 100%; max-width: 480px; height: auto; object-fit: cover; display: block; }
+  .contact-form { display: flex; flex-direction: column; gap: 24px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group-label-row { display: flex; align-items: baseline; gap: 6px; }
+  .form-group label { font-size: 14px; font-weight: 600; color: var(--black); }
+  .form-group .required-text { font-size: 12px; font-weight: 400; color: var(--gray); }
+  .form-group input, .form-group textarea {
+    background: #f5f5f5; border: 1px solid #e0e0e0; color: var(--black);
+    font-family: inherit; font-size: 15px; font-weight: 400; padding: 14px 16px;
+    outline: none; transition: border-color 0.25s, background 0.25s; border-radius: 0; -webkit-appearance: none;
+  }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: #bbb; }
+  .form-group input:focus, .form-group textarea:focus { border-color: #999; background: #fff; }
+  .form-group textarea { resize: vertical; min-height: 150px; line-height: 1.6; }
+  .contact-submit { display: inline-block; margin-top: 8px; padding: 18px 48px; background: var(--black); color: var(--white); font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.25s; align-self: flex-start; }
+  .contact-submit:hover { background: #333; }
+  .contact-alt { margin-top: 40px; font-size: 14px; font-weight: 400; color: #555; letter-spacing: 0.2px; line-height: 1.8; }
+  .contact-alt a { color: var(--black); text-decoration: none; font-weight: 500; transition: opacity 0.2s; }
+  .contact-alt a:hover { opacity: 0.6; }
+
+  .sub-gallery-section { padding: calc(100px + 40px) 48px 80px; }
+  .sub-gallery-section .masonry { columns: 3; }
+
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.88); z-index: 500; justify-content: center; align-items: center; cursor: pointer; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 85vw; max-height: 85vh; object-fit: contain; cursor: default; box-shadow: 0 4px 40px rgba(0,0,0,0.15); border: 10px solid white; }
+  .lightbox-close { position: absolute; top: 24px; right: 32px; background: none; border: none; color: #333; font-size: 32px; cursor: pointer; font-weight: 300; }
+
+  @media (max-width: 1024px) {
+    .masonry { columns: 3; }
+    .sub-gallery-section .masonry { columns: 2; }
+    nav { padding: 0 32px; }
+    .gallery-section, .sub-gallery-section { padding-left: 32px; padding-right: 32px; }
+    .contact-layout { padding: 100px 32px 60px; gap: 40px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .masonry { columns: 2; }
+    .sub-gallery-section .masonry { columns: 2; }
+    .nav-links { display: none; }
+    .hamburger { display: block; }
+    .nav-links.mobile-open { display: flex; flex-direction: column; position: fixed; inset: 0; background: var(--white); color: var(--black); justify-content: center; align-items: center; gap: 36px; z-index: 150; }
+    .nav-links.mobile-open a { font-size: 20px; }
+    nav.dark .nav-links.mobile-open { background: rgba(20,20,20,0.97); color: var(--white); }
+    .contact-layout { grid-template-columns: 1fr; }
+    .contact-photo-side { order: -1; }
+    .contact-photo-side img { max-width: 360px; }
+  }
+  @media (max-width: 480px) {
+    .masonry { columns: 1; }
+    .sub-gallery-section .masonry { columns: 1; }
+    nav { padding: 0 20px; }
+    .gallery-section { padding-left: 20px; padding-right: 20px; }
+    .sub-gallery-section { padding-left: 20px; padding-right: 20px; }
+    .contact-layout { padding: 100px 20px 60px; }
+    .logo-overview-img { height: 60px; }
+  }
+
+  .pricing-section { background: var(--white); min-height: 100vh; padding: 180px 24px 80px; display: flex; flex-direction: column; justify-content: center; }
+  .pricing-header { text-align: center; margin-bottom: 60px; }
+  .pricing-title { font-family: 'Georgia', 'Times New Roman', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--black); margin-bottom: 20px; }
+  .pricing-subtitle { font-size: 15px; font-weight: 300; color: #666; max-width: 600px; margin: 0 auto; line-height: 1.7; }
+  .pricing-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 0 auto; }
+  .pricing-card { padding: 0 10px; display: flex; flex-direction: column; }
+  .pricing-card-divider { border: none; border-top: 1px solid #ccc; margin-bottom: 24px; }
+  .pricing-card-name { font-family: 'Georgia', 'Times New Roman', serif; font-size: 25px; font-weight: 700; color: var(--black); margin-bottom: 16px; white-space: nowrap; }
+  .pricing-card-divider2 { border: none; border-top: 1px solid #ccc; margin-bottom: 28px; }
+  .pricing-card-features { list-style: disc; padding-left: 20px; margin-bottom: 32px; flex-grow: 1; }
+  .pricing-card-features li { font-size: 16px; font-weight: 400; color: #444; line-height: 3; }
+  .pricing-card-bottom-divider { border: none; border-top: 1px solid #ccc; margin-bottom: 20px; margin-top: auto; }
+  .pricing-card-price { font-family: 'Georgia', 'Times New Roman', serif; font-size: 22.5px; font-weight: 700; color: var(--black); margin-bottom: 12px; }
+  .pricing-card-price-divider { border: none; border-top: 1px solid #ccc; margin-top: 16px; }
+  @media (max-width: 1024px) { .pricing-cards { grid-template-columns: repeat(2, 1fr); gap: 32px; } .pricing-section { padding: 100px 32px 60px; } }
+  @media (max-width: 768px) { .pricing-cards { grid-template-columns: 1fr; max-width: 480px; } }
+  @media (max-width: 480px) { .pricing-section { padding: 100px 20px 60px; } }
+
+  .splash { position: fixed; inset: 0; background: var(--white); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 1; transition: opacity 0.6s ease; }
+  .splash.fade-out { opacity: 0; pointer-events: none; }
+  .splash img { height: 80px; width: auto; opacity: 0; animation: splashFadeIn 1.2s ease forwards; }
+  @keyframes splashFadeIn { 0% { opacity: 0; transform: scale(0.85); } 100% { opacity: 1; transform: scale(1.05); } }
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <img src="logo.png" alt="David Chen Photography">
+</div>
+
+<nav class="light overview-nav" id="mainNav">
+  <a href="#" class="logo" onclick="showSection('portfolio')"><img src="logo.png" alt="David Chen Photography" class="logo-img"></a>
+  <a href="#" class="logo-overview" onclick="showSection('portfolio')"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#" class="active" data-section="portfolio" onclick="showSection('portfolio')">Portfolio</a></li>
+    <li><a href="#" data-section="people" onclick="showSection('people')">People</a></li>
+    <li><a href="#" data-section="things" onclick="showSection('things')">Stuff</a></li>
+    <li><a href="#" data-section="pricing" onclick="showSection('pricing')">Pricing</a></li>
+    <li><a href="#" data-section="contact" onclick="showSection('contact')">Contact</a></li>
+    <li><a href="https://instagram.com" target="_blank" class="ig-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="section active" id="portfolio">
+  <div class="gallery-section overview-gallery">
+    <div class="masonry" id="portfolioGrid"></div>
+  </div>
+</div>
+
+<div class="section sub-gallery-section" id="people">
+  <div class="masonry" id="peopleGrid"></div>
+</div>
+
+<div class="section sub-gallery-section" id="things">
+  <div class="masonry" id="thingsGrid"></div>
+</div>
+
+<div class="section pricing-section" id="pricing">
+  <div class="pricing-header">
+    <h2 class="pricing-title">Portrait Packages</h2>
+  </div>
+  <div class="pricing-cards">
+    <div class="pricing-card">
+      <hr class="pricing-card-divider">
+      <h3 class="pricing-card-name">Classic Portrait Session</h3>
+      <hr class="pricing-card-divider2">
+      <ul class="pricing-card-features">
+        <li>Up to 5 people (groups more than 5, additional fee applies)</li>
+        <li>Outdoor location or in your home</li>
+        <li>Session up to 1 hour</li>
+        <li>Private online gallery</li>
+        <li>15 artistically edited full resolution images</li>
+      </ul>
+      <hr class="pricing-card-bottom-divider">
+      <p class="pricing-card-price">Starting at $629</p>
+      <hr class="pricing-card-price-divider">
+    </div>
+    <div class="pricing-card">
+      <hr class="pricing-card-divider">
+      <h3 class="pricing-card-name">Signature Portrait Session</h3>
+      <hr class="pricing-card-divider2">
+      <ul class="pricing-card-features">
+        <li>Up to 5 people (groups more than 5, additional fee applies)</li>
+        <li>Outdoor location or in your home</li>
+        <li>Session up to 1 hour</li>
+        <li>Private online gallery</li>
+        <li>30 artistically edited full resolution images</li>
+      </ul>
+      <hr class="pricing-card-bottom-divider">
+      <p class="pricing-card-price">Starting at $829</p>
+      <hr class="pricing-card-price-divider">
+    </div>
+    <div class="pricing-card">
+      <hr class="pricing-card-divider">
+      <h3 class="pricing-card-name">Luxe Portrait Session</h3>
+      <hr class="pricing-card-divider2">
+      <ul class="pricing-card-features">
+        <li>Up to 6 people (groups more than 6, additional fee applies)</li>
+        <li>Outdoor location or in your home</li>
+        <li>Session up to 1.5 hours</li>
+        <li>Private online gallery</li>
+        <li>50+ artistically edited full resolution images</li>
+      </ul>
+      <hr class="pricing-card-bottom-divider">
+      <p class="pricing-card-price">Starting at $1,129</p>
+      <hr class="pricing-card-price-divider">
+    </div>
+    <div class="pricing-card">
+      <hr class="pricing-card-divider">
+      <h3 class="pricing-card-name">Event Photography</h3>
+      <hr class="pricing-card-divider2">
+      <ul class="pricing-card-features">
+        <li>Birthday and holiday parties or any other non-wedding event</li>
+        <li>Session up to 2 hours</li>
+        <li>$300 up to each additional hour</li>
+        <li>Private online gallery</li>
+        <li>100+ artistically edited full resolution images</li>
+      </ul>
+      <hr class="pricing-card-bottom-divider">
+      <p class="pricing-card-price">Starting at $1,299</p>
+      <hr class="pricing-card-price-divider">
+    </div>
+  </div>
+</div>
+
+<div class="section contact-section" id="contact">
+  <div class="contact-layout">
+    <div class="contact-form-side">
+      <form class="contact-form" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+          <div class="form-group-label-row"><label for="name">Name</label><span class="required-text">(required)</span></div>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+          <div class="form-group-label-row"><label for="email">Email Address</label><span class="required-text">(required)</span></div>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <div class="form-group-label-row"><label for="message">Message</label><span class="required-text">(required)</span></div>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="contact-submit">Submit</button>
+      </form>
+      <div class="contact-alt">
+        Please fill out contact form or you can reach me at<br>
+        <a href="mailto:David@davidchenphotography.com">David@davidchenphotography.com</a>
+      </div>
+    </div>
+    <div class="contact-photo-side">
+      <img src="photos/david-portrait.webp" alt="David Chen - Photographer">
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="thankYouModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <p>Thank you for your message.<br>I will get in touch soon.</p>
+    <button class="modal-close" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <img src="" alt="" id="lightboxImg">
+</div>
+
+<script>
+// ── Cloudinary config ────────────────────────────────────────────────────────
+var CLOUD_NAME  = 'duyreeset';
+var CONFIG_URL  = 'https://res.cloudinary.com/' + CLOUD_NAME + '/raw/upload/gallery-config.json';
+var IMG_BASE    = 'https://res.cloudinary.com/' + CLOUD_NAME + '/image/upload/';
+var THUMB_OPTS  = 'w_900,c_scale,q_auto,f_auto/';
+var FULL_OPTS   = 'q_auto,f_auto/';
+
+var galleryConfig = null;
+var loadedGrids   = {};
+
+async function fetchConfig() {
+  if (galleryConfig) return galleryConfig;
+  try {
+    var res = await fetch(CONFIG_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('no config');
+    galleryConfig = await res.json();
+  } catch (e) {
+    galleryConfig = { portfolio: [], people: [], stuff: [], privateGalleries: [] };
+  }
+  return galleryConfig;
+}
+
+function buildImageUrl(publicId, opts) {
+  return IMG_BASE + opts + publicId;
+}
+
+function populateGridFromConfig(gridId, photos) {
+  var grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (!photos || photos.length === 0) {
+    grid.innerHTML = '<p class="empty-gallery">No photos yet.</p>';
+    return;
+  }
+
+  photos.forEach(function(publicId, i) {
+    var item = document.createElement('div');
+    item.className = 'masonry-item';
+    var img = document.createElement('img');
+    img.src = buildImageUrl(publicId, THUMB_OPTS);
+    img.alt = 'Photo ' + (i + 1);
+    img.loading = 'lazy';
+    var fullSrc = buildImageUrl(publicId, FULL_OPTS);
+    item.appendChild(img);
+    item.addEventListener('click', function() { openLightbox(fullSrc); });
+    grid.appendChild(item);
+  });
+}
+
+// ── Section switching ────────────────────────────────────────────────────────
+async function showSection(name) {
+  var sections = document.querySelectorAll('.section');
+  sections.forEach(function(s) { s.classList.remove('active'); });
+  var links = document.querySelectorAll('.nav-links a[data-section]');
+  links.forEach(function(l) { l.classList.remove('active'); });
+
+  document.getElementById(name).classList.add('active');
+  var activeLink = document.querySelector('.nav-links a[data-section="' + name + '"]');
+  if (activeLink) activeLink.classList.add('active');
+
+  var nav = document.getElementById('mainNav');
+  nav.className = 'light';
+  if (name === 'portfolio' || name === 'contact' || name === 'pricing') nav.classList.add('overview-nav');
+  if (name === 'people' || name === 'things') nav.classList.add('large-logo');
+
+  closeMobile();
+  window.scrollTo(0, 0);
+
+  // Load gallery from Cloudinary if not already loaded
+  if ((name === 'portfolio' || name === 'people' || name === 'things') && !loadedGrids[name]) {
+    loadedGrids[name] = true;
+    var config = await fetchConfig();
+    var key    = name === 'things' ? 'stuff' : name;
+    var gridId = name === 'things' ? 'thingsGrid' : name + 'Grid';
+    populateGridFromConfig(gridId, config[key]);
+  }
+}
+
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(e) {
+  if (e && e.target.tagName === 'IMG') return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+
+// ── Contact form ─────────────────────────────────────────────────────────────
+function handleSubmit(e) {
+  e.preventDefault();
+  e.target.reset();
+  document.getElementById('thankYouModal').classList.add('open');
+}
+function closeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('thankYouModal').classList.remove('open');
+}
+
+// ── Mobile nav ───────────────────────────────────────────────────────────────
+function toggleMobile() {
+  document.getElementById('navLinks').classList.toggle('mobile-open');
+  document.getElementById('hamburger').classList.toggle('open');
+}
+function closeMobile() {
+  document.getElementById('navLinks').classList.remove('mobile-open');
+  document.getElementById('hamburger').classList.remove('open');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  var config = await fetchConfig();
+  populateGridFromConfig('portfolioGrid', config.portfolio);
+  loadedGrids['portfolio'] = true;
+})();
+
+setTimeout(function() {
+  var splash = document.getElementById('splash');
+  splash.classList.add('fade-out');
+  setTimeout(function() { splash.remove(); }, 600);
+}, 2000);
+</script>
+</body>
+</html>

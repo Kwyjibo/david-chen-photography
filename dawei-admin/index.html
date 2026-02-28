@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — David Chen Photography</title>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --black: #1a1a1a; --white: #fff; --gray: #888; --light: #f5f5f5; --border: #e0e0e0; --accent: #1a1a1a; --danger: #c0392b; --success: #27ae60; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #fafafa; color: var(--black); -webkit-font-smoothing: antialiased; }
+
+  /* ── Login ── */
+  #loginScreen { display: flex; min-height: 100vh; justify-content: center; align-items: center; background: var(--white); }
+  .login-box { width: 360px; text-align: center; padding: 0 24px; }
+  .login-logo { height: 50px; margin-bottom: 40px; }
+  .login-box h1 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .login-box p { font-size: 14px; color: var(--gray); margin-bottom: 32px; }
+  .login-box input { width: 100%; padding: 14px 16px; border: 1px solid var(--border); background: var(--light); font-family: inherit; font-size: 15px; outline: none; margin-bottom: 16px; }
+  .login-box input:focus { border-color: #999; background: var(--white); }
+  .btn { display: inline-block; padding: 14px 32px; background: var(--black); color: var(--white); border: none; font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; width: 100%; }
+  .btn:hover { background: #333; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 20px; }
+
+  /* ── Admin shell ── */
+  #adminShell { display: none; min-height: 100vh; }
+  header { position: sticky; top: 0; z-index: 100; background: var(--white); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .header-logo { height: 32px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .btn-sm { padding: 9px 20px; font-size: 12px; letter-spacing: 1px; width: auto; }
+  .btn-outline { background: transparent; color: var(--black); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--light); }
+  .btn-danger { background: var(--danger); }
+  .btn-danger:hover { background: #a93226; }
+  .btn-success { background: var(--success); }
+  .btn-success:hover { background: #229954; }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 32px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 32px; }
+  .tab { padding: 12px 24px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--gray); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s; }
+  .tab:hover { color: var(--black); }
+  .tab.active { color: var(--black); border-bottom-color: var(--black); }
+
+  /* ── Panel ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Toolbar ── */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .toolbar h2 { font-size: 16px; font-weight: 600; flex: 1; }
+  .save-status { font-size: 13px; color: var(--gray); }
+  .save-status.saving { color: #e67e22; }
+  .save-status.saved  { color: var(--success); }
+  .save-status.error  { color: var(--danger); }
+
+  /* ── Photo grid ── */
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .photo-card { position: relative; background: var(--border); border-radius: 2px; overflow: hidden; cursor: grab; user-select: none; }
+  .photo-card:active { cursor: grabbing; }
+  .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; pointer-events: none; }
+  .photo-card .card-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+  .photo-card:hover .card-actions { opacity: 1; }
+  .card-btn { width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
+  .card-btn-delete { background: rgba(192,57,43,0.9); color: white; }
+  .card-btn-delete:hover { background: var(--danger); }
+  .drag-hint { position: absolute; bottom: 6px; left: 6px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; border-radius: 2px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .photo-card:hover .drag-hint { opacity: 1; }
+
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--gray); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 18px; font-weight: 500; margin-bottom: 8px; color: var(--black); }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ── Private Galleries ── */
+  .gallery-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+  .gallery-row { background: var(--white); border: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+  .gallery-row-info { flex: 1; }
+  .gallery-row-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .gallery-row-meta { font-size: 13px; color: var(--gray); }
+  .gallery-row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .copy-link-btn { position: relative; }
+  .copy-tooltip { position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%); background: var(--black); color: white; font-size: 11px; padding: 4px 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .copy-link-btn.copied .copy-tooltip { opacity: 1; }
+
+  /* ── Create gallery modal ── */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500; justify-content: center; align-items: center; }
+  .modal-bg.open { display: flex; }
+  .modal-card { background: var(--white); padding: 40px; width: 420px; max-width: 90vw; }
+  .modal-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .modal-card p { font-size: 14px; color: var(--gray); margin-bottom: 24px; }
+  .modal-card input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); font-family: inherit; font-size: 15px; outline: none; margin-bottom: 16px; }
+  .modal-card input:focus { border-color: #999; }
+  .modal-actions { display: flex; gap: 12px; }
+  .modal-actions .btn { flex: 1; }
+
+  /* ── Toast ── */
+  #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: var(--black); color: white; padding: 12px 24px; font-size: 14px; border-radius: 2px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; }
+  #toast.show { opacity: 1; }
+
+  /* ── Delete confirm ── */
+  .confirm-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 600; justify-content: center; align-items: center; }
+  .confirm-bg.open { display: flex; }
+  .confirm-card { background: var(--white); padding: 32px; width: 360px; max-width: 90vw; text-align: center; }
+  .confirm-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .confirm-card p { font-size: 14px; color: var(--gray); margin-bottom: 24px; }
+  .confirm-actions { display: flex; gap: 12px; }
+  .confirm-actions .btn { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ─────────────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="../logo.png" alt="David Chen Photography" class="login-logo">
+    <h1>Admin Access</h1>
+    <p>Enter your admin password to manage your galleries.</p>
+    <input type="password" id="passwordInput" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn" onclick="login()" id="loginBtn">Sign In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ── ADMIN SHELL ───────────────────────────────────────────────────────── -->
+<div id="adminShell">
+  <header>
+    <img src="../logo.png" alt="David Chen Photography" class="header-logo">
+    <div class="header-right">
+      <a href="../" target="_blank" class="btn btn-sm btn-outline">View Site ↗</a>
+      <button class="btn btn-sm btn-outline" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('portfolio')">Portfolio</button>
+      <button class="tab" onclick="switchTab('people')">People</button>
+      <button class="tab" onclick="switchTab('stuff')">Stuff</button>
+      <button class="tab" onclick="switchTab('private')">Private Galleries</button>
+    </div>
+
+    <!-- Portfolio Panel -->
+    <div class="panel active" id="panel-portfolio">
+      <div class="toolbar">
+        <h2>Portfolio Gallery</h2>
+        <span class="save-status" id="status-portfolio"></span>
+        <button class="btn btn-sm" onclick="openUpload('portfolio')">+ Upload Photos</button>
+        <button class="btn btn-sm btn-success" onclick="saveOrder('portfolio')">Save Order</button>
+      </div>
+      <div class="photo-grid" id="grid-portfolio"></div>
+    </div>
+
+    <!-- People Panel -->
+    <div class="panel" id="panel-people">
+      <div class="toolbar">
+        <h2>People Gallery</h2>
+        <span class="save-status" id="status-people"></span>
+        <button class="btn btn-sm" onclick="openUpload('people')">+ Upload Photos</button>
+        <button class="btn btn-sm btn-success" onclick="saveOrder('people')">Save Order</button>
+      </div>
+      <div class="photo-grid" id="grid-people"></div>
+    </div>
+
+    <!-- Stuff Panel -->
+    <div class="panel" id="panel-stuff">
+      <div class="toolbar">
+        <h2>Stuff Gallery</h2>
+        <span class="save-status" id="status-stuff"></span>
+        <button class="btn btn-sm" onclick="openUpload('stuff')">+ Upload Photos</button>
+        <button class="btn btn-sm btn-success" onclick="saveOrder('stuff')">Save Order</button>
+      </div>
+      <div class="photo-grid" id="grid-stuff"></div>
+    </div>
+
+    <!-- Private Galleries Panel -->
+    <div class="panel" id="panel-private">
+      <div class="toolbar">
+        <h2>Private Client Galleries</h2>
+        <button class="btn btn-sm" onclick="openCreateGallery()">+ New Gallery</button>
+      </div>
+      <div class="gallery-list" id="privateGalleryList"></div>
+      <div id="privateGalleryEditor" style="display:none;">
+        <div class="toolbar" style="margin-top:24px;">
+          <h2 id="privateEditorTitle">Gallery Photos</h2>
+          <span class="save-status" id="status-private"></span>
+          <button class="btn btn-sm" onclick="openUpload('private')">+ Upload Photos</button>
+          <button class="btn btn-sm btn-success" onclick="saveOrder('private')">Save Order</button>
+          <button class="btn btn-sm btn-outline" onclick="closePrivateEditor()">← Back</button>
+        </div>
+        <div class="photo-grid" id="grid-private"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── CREATE GALLERY MODAL ──────────────────────────────────────────────── -->
+<div class="modal-bg" id="createModal">
+  <div class="modal-card">
+    <h2>New Private Gallery</h2>
+    <p>Enter a name for this client gallery. A secret link will be created that only people with the link can access.</p>
+    <input type="text" id="newGalleryName" placeholder="e.g. Smith Family 2024" onkeydown="if(event.key==='Enter')createGallery()">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCreateGallery()">Cancel</button>
+      <button class="btn" onclick="createGallery()">Create Gallery</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM ─────────────────────────────────────────────────────── -->
+<div class="confirm-bg" id="confirmModal">
+  <div class="confirm-card">
+    <h3>Delete Photo?</h3>
+    <p>This will permanently remove the photo from Cloudinary and your gallery. This cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="cancelDelete()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ──────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+var CLOUD_NAME   = 'duyreeset';
+var UPLOAD_PRESET = 'david_chen_portfolio';
+var API_BASE     = '/api/gallery-api';
+var CONFIG_URL   = 'https://res.cloudinary.com/' + CLOUD_NAME + '/raw/upload/gallery-config.json';
+var IMG_BASE     = 'https://res.cloudinary.com/' + CLOUD_NAME + '/image/upload/';
+var THUMB        = 'w_400,h_400,c_fill,q_auto,f_auto/';
+
+var password         = '';
+var config           = null;
+var sortables        = {};
+var currentPrivateId = null;
+var deleteTarget     = null; // { publicId, gallery }
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+async function login() {
+  var pw  = document.getElementById('passwordInput').value;
+  var btn = document.getElementById('loginBtn');
+  var err = document.getElementById('loginError');
+  if (!pw) { err.textContent = 'Please enter your password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    var res = await fetch(API_BASE + '?action=auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw }) });
+    if (res.ok) {
+      password = pw;
+      sessionStorage.setItem('adminPass', pw);
+      err.textContent = '';
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminShell').style.display  = 'block';
+      await loadConfig();
+    } else {
+      err.textContent = 'Incorrect password. Please try again.';
+    }
+  } catch (e) {
+    err.textContent = 'Connection error. Are Netlify functions deployed?';
+  }
+  btn.disabled = false; btn.textContent = 'Sign In';
+}
+
+function logout() {
+  sessionStorage.removeItem('adminPass');
+  location.reload();
+}
+
+// Auto-login if session exists
+(function() {
+  var saved = sessionStorage.getItem('adminPass');
+  if (saved) {
+    document.getElementById('passwordInput').value = saved;
+    password = saved;
+    // Verify silently
+    fetch(API_BASE + '?action=auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: saved }) })
+      .then(function(r) {
+        if (r.ok) {
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('adminShell').style.display  = 'block';
+          loadConfig();
+        } else { sessionStorage.removeItem('adminPass'); }
+      }).catch(function() {});
+  }
+})();
+
+// ── Config load/save ─────────────────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    var res = await fetch(CONFIG_URL + '?t=' + Date.now());
+    config  = res.ok ? await res.json() : { portfolio: [], people: [], stuff: [], privateGalleries: [] };
+  } catch (e) {
+    config = { portfolio: [], people: [], stuff: [], privateGalleries: [] };
+  }
+  renderGrid('portfolio', config.portfolio);
+  renderGrid('people',    config.people);
+  renderGrid('stuff',     config.stuff);
+  renderPrivateList();
+}
+
+async function saveConfig() {
+  var res = await fetch(API_BASE + '?action=save-config', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password, config })
+  });
+  return res.ok;
+}
+
+// ── Grid rendering ────────────────────────────────────────────────────────────
+function renderGrid(gallery, photos) {
+  var grid = document.getElementById('grid-' + gallery);
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (!photos || photos.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📷</div><h3>No photos yet</h3><p>Click "+ Upload Photos" to add images to this gallery.</p></div>';
+    return;
+  }
+
+  photos.forEach(function(publicId) {
+    grid.appendChild(makeCard(publicId, gallery));
+  });
+
+  // Init Sortable drag-and-drop
+  if (sortables[gallery]) sortables[gallery].destroy();
+  sortables[gallery] = new Sortable(grid, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    filter: '.card-btn',
+    preventOnFilter: false,
+  });
+}
+
+function makeCard(publicId, gallery) {
+  var card = document.createElement('div');
+  card.className = 'photo-card';
+  card.dataset.id = publicId;
+
+  var img = document.createElement('img');
+  img.src = IMG_BASE + THUMB + publicId;
+  img.alt = publicId.split('/').pop();
+  img.loading = 'lazy';
+
+  var actions = document.createElement('div');
+  actions.className = 'card-actions';
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'card-btn card-btn-delete';
+  delBtn.textContent = '×';
+  delBtn.title = 'Delete photo';
+  delBtn.onclick = function(e) { e.stopPropagation(); askDelete(publicId, gallery); };
+
+  var hint = document.createElement('div');
+  hint.className = 'drag-hint';
+  hint.textContent = 'drag to reorder';
+
+  actions.appendChild(delBtn);
+  card.appendChild(img);
+  card.appendChild(actions);
+  card.appendChild(hint);
+  return card;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+var currentTab = 'portfolio';
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  currentTab = name;
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+var currentUploadGallery = '';
+function openUpload(gallery) {
+  currentUploadGallery = gallery;
+  var folder = gallery === 'private' ? 'private/' + currentPrivateId : gallery;
+
+  cloudinary.openUploadWidget({
+    cloudName:    CLOUD_NAME,
+    uploadPreset: UPLOAD_PRESET,
+    folder:       folder,
+    multiple:     true,
+    maxFiles:     50,
+    sources:      ['local', 'camera'],
+    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
+  }, function(error, result) {
+    if (error) { toast('Upload error: ' + (error.statusText || error)); return; }
+    if (result && result.event === 'success') {
+      var publicId = result.info.public_id;
+      var key      = gallery === 'private' ? null : gallery;
+      if (key) {
+        if (!config[key]) config[key] = [];
+        config[key].push(publicId);
+        renderGrid(key, config[key]);
+      } else {
+        var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+        if (pg) { pg.photos.push(publicId); renderGrid('private', pg.photos); }
+      }
+    }
+    if (result && result.event === 'close') {
+      // Auto-save after upload session ends
+      setStatus(gallery, 'saving');
+      saveConfig().then(function(ok) { setStatus(gallery, ok ? 'saved' : 'error'); });
+    }
+  });
+}
+
+// ── Save order ────────────────────────────────────────────────────────────────
+async function saveOrder(gallery) {
+  var grid = document.getElementById('grid-' + gallery);
+  if (!grid) return;
+
+  var cards = grid.querySelectorAll('.photo-card');
+  var ordered = Array.from(cards).map(function(c) { return c.dataset.id; });
+
+  if (gallery === 'private') {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    if (pg) pg.photos = ordered;
+  } else {
+    config[gallery] = ordered;
+  }
+
+  setStatus(gallery, 'saving');
+  var ok = await saveConfig();
+  setStatus(gallery, ok ? 'saved' : 'error');
+  if (ok) toast('Order saved!');
+}
+
+function setStatus(gallery, state) {
+  var el = document.getElementById('status-' + gallery);
+  if (!el) return;
+  el.className = 'save-status ' + state;
+  el.textContent = state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved ✓' : state === 'error' ? 'Save failed ✗' : '';
+  if (state === 'saved') setTimeout(function() { el.textContent = ''; el.className = 'save-status'; }, 3000);
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+function askDelete(publicId, gallery) {
+  deleteTarget = { publicId, gallery };
+  document.getElementById('confirmModal').classList.add('open');
+}
+function cancelDelete() {
+  deleteTarget = null;
+  document.getElementById('confirmModal').classList.remove('open');
+}
+async function confirmDelete() {
+  if (!deleteTarget) return;
+  document.getElementById('confirmModal').classList.remove('open');
+  var { publicId, gallery } = deleteTarget;
+  deleteTarget = null;
+
+  // Remove from Cloudinary
+  await fetch(API_BASE + '?action=delete-photo', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password, publicId })
+  });
+
+  // Remove from config
+  var key = gallery === 'private' ? null : gallery;
+  if (key) {
+    config[key] = (config[key] || []).filter(function(id) { return id !== publicId; });
+    renderGrid(key, config[key]);
+  } else {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    if (pg) { pg.photos = pg.photos.filter(function(id) { return id !== publicId; }); renderGrid('private', pg.photos); }
+  }
+
+  await saveConfig();
+  toast('Photo deleted.');
+}
+
+// ── Private Galleries ─────────────────────────────────────────────────────────
+function renderPrivateList() {
+  var list = document.getElementById('privateGalleryList');
+  list.innerHTML = '';
+  var galleries = config.privateGalleries || [];
+
+  if (galleries.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">🔒</div><h3>No private galleries yet</h3><p>Create a gallery and share its secret link with your client.</p></div>';
+    return;
+  }
+
+  galleries.forEach(function(g) {
+    var siteOrigin = window.location.origin;
+    var link = siteOrigin + '/gallery/?id=' + g.id;
+
+    var row = document.createElement('div');
+    row.className = 'gallery-row';
+    row.innerHTML =
+      '<div class="gallery-row-info">' +
+        '<div class="gallery-row-name">' + escHtml(g.name) + '</div>' +
+        '<div class="gallery-row-meta">' + (g.photos ? g.photos.length : 0) + ' photos &nbsp;·&nbsp; Created ' + (g.created || 'recently') + '</div>' +
+      '</div>' +
+      '<div class="gallery-row-actions">' +
+        '<button class="btn btn-sm btn-outline copy-link-btn" onclick="copyLink(this, \'' + link + '\')"><span class="copy-tooltip">Copied!</span>Copy Link</button>' +
+        '<button class="btn btn-sm" onclick="openPrivateEditor(\'' + g.id + '\', \'' + escHtml(g.name) + '\')">Manage Photos</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteGallery(\'' + g.id + '\')">Delete</button>' +
+      '</div>';
+    list.appendChild(row);
+  });
+}
+
+function copyLink(btn, link) {
+  navigator.clipboard.writeText(link).then(function() {
+    btn.classList.add('copied');
+    setTimeout(function() { btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function openPrivateEditor(id, name) {
+  currentPrivateId = id;
+  document.getElementById('privateEditorTitle').textContent = name;
+  document.getElementById('privateGalleryList').parentElement.querySelector('.toolbar').style.display = 'none';
+  document.getElementById('privateGalleryList').style.display = 'none';
+  document.getElementById('privateGalleryEditor').style.display = 'block';
+  var pg = config.privateGalleries.find(function(g) { return g.id === id; });
+  renderGrid('private', pg ? pg.photos : []);
+}
+
+function closePrivateEditor() {
+  currentPrivateId = null;
+  document.getElementById('privateGalleryList').parentElement.querySelector('.toolbar').style.display = '';
+  document.getElementById('privateGalleryList').style.display = '';
+  document.getElementById('privateGalleryEditor').style.display = 'none';
+}
+
+// ── Create gallery modal ──────────────────────────────────────────────────────
+function openCreateGallery() { document.getElementById('createModal').classList.add('open'); document.getElementById('newGalleryName').focus(); }
+function closeCreateGallery() { document.getElementById('createModal').classList.remove('open'); document.getElementById('newGalleryName').value = ''; }
+
+async function createGallery() {
+  var name = document.getElementById('newGalleryName').value.trim();
+  if (!name) return;
+
+  var res  = await fetch(API_BASE + '?action=create-gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+  var data = await res.json();
+  var id   = data.id;
+
+  var gallery = { id: id, name: name, created: new Date().toLocaleDateString(), photos: [] };
+  if (!config.privateGalleries) config.privateGalleries = [];
+  config.privateGalleries.push(gallery);
+
+  await saveConfig();
+  renderPrivateList();
+  closeCreateGallery();
+  toast('Gallery "' + name + '" created!');
+}
+
+async function deleteGallery(id) {
+  if (!confirm('Delete this entire gallery? This cannot be undone.')) return;
+  config.privateGalleries = config.privateGalleries.filter(function(g) { return g.id !== id; });
+  await saveConfig();
+  renderPrivateList();
+  toast('Gallery deleted.');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 3000);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

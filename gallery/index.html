@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gallery — David Chen Photography</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #fff; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+
+  header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #e0e0e0; padding: 0 48px; height: 72px; display: flex; align-items: center; justify-content: space-between; z-index: 100; }
+  .logo { height: 36px; }
+  .back-link { font-size: 14px; color: #888; transition: color 0.2s; }
+  .back-link:hover { color: #1a1a1a; }
+
+  .gallery-header { padding: 60px 48px 32px; max-width: 1400px; margin: 0 auto; }
+  .gallery-title  { font-family: 'Georgia', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 700; margin-bottom: 8px; }
+  .gallery-meta   { font-size: 15px; color: #888; }
+
+  .masonry-wrap { padding: 0 48px 80px; max-width: 1400px; margin: 0 auto; }
+  .masonry { columns: 4; column-gap: 7px; }
+  .masonry-item { break-inside: avoid; margin-bottom: 7px; cursor: pointer; overflow: hidden; position: relative; }
+  .masonry-item::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.5s; pointer-events: none; }
+  .masonry-item:hover::after { background: rgba(0,0,0,0.25); }
+  .masonry-item img { width: 100%; height: auto; display: block; transition: transform 0.5s; }
+  .masonry-item:hover img { transform: scale(1.04); }
+
+  @media (max-width: 1024px) { .masonry { columns: 3; } header, .gallery-header, .masonry-wrap { padding-left: 32px; padding-right: 32px; } }
+  @media (max-width: 768px)  { .masonry { columns: 2; } header, .gallery-header, .masonry-wrap { padding-left: 20px; padding-right: 20px; } }
+  @media (max-width: 480px)  { .masonry { columns: 1; } }
+
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.92); z-index: 500; justify-content: center; align-items: center; cursor: pointer; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 88vw; max-height: 88vh; object-fit: contain; cursor: default; box-shadow: 0 4px 40px rgba(0,0,0,0.15); border: 10px solid white; }
+  .lightbox-close { position: absolute; top: 24px; right: 32px; background: none; border: none; color: #333; font-size: 32px; cursor: pointer; font-weight: 300; }
+  .lightbox-prev, .lightbox-next { position: absolute; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 40px; color: #555; cursor: pointer; padding: 16px; user-select: none; }
+  .lightbox-prev { left: 12px; }
+  .lightbox-next { right: 12px; }
+  .lightbox-prev:hover, .lightbox-next:hover { color: #1a1a1a; }
+
+  .state-box { text-align: center; padding: 100px 20px; color: #999; }
+  .state-box h2 { font-size: 22px; font-weight: 500; margin-bottom: 8px; color: #1a1a1a; }
+  .state-box p  { font-size: 15px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/"><img src="../logo.png" alt="David Chen Photography" class="logo"></a>
+  <a href="/" class="back-link">← Back to site</a>
+</header>
+
+<div id="loadingState" class="state-box">
+  <h2>Loading gallery…</h2>
+  <p>Please wait a moment.</p>
+</div>
+
+<div id="notFoundState" class="state-box" style="display:none;">
+  <h2>Gallery not found</h2>
+  <p>This gallery link may be invalid or expired.<br>Please check the link and try again.</p>
+</div>
+
+<div id="galleryContent" style="display:none;">
+  <div class="gallery-header">
+    <h1 class="gallery-title" id="galleryTitle"></h1>
+    <p class="gallery-meta" id="galleryMeta"></p>
+  </div>
+  <div class="masonry-wrap">
+    <div class="masonry" id="galleryGrid"></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <button class="lightbox-prev" onclick="event.stopPropagation(); shiftLight(-1)">&#8249;</button>
+  <img src="" alt="" id="lightboxImg">
+  <button class="lightbox-next" onclick="event.stopPropagation(); shiftLight(1)">&#8250;</button>
+</div>
+
+<script>
+var CLOUD_NAME = 'duyreeset';
+var CONFIG_URL = 'https://res.cloudinary.com/' + CLOUD_NAME + '/raw/upload/gallery-config.json';
+var IMG_BASE   = 'https://res.cloudinary.com/' + CLOUD_NAME + '/image/upload/';
+var THUMB_OPTS = 'w_900,c_scale,q_auto,f_auto/';
+var FULL_OPTS  = 'q_auto,f_auto/';
+
+var lightboxPhotos = [];
+var lightboxIndex  = 0;
+
+(async function init() {
+  var params  = new URLSearchParams(window.location.search);
+  var id      = params.get('id');
+  if (!id) { showState('notFound'); return; }
+
+  var config;
+  try {
+    var res = await fetch(CONFIG_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error();
+    config = await res.json();
+  } catch (e) { showState('notFound'); return; }
+
+  var gallery = (config.privateGalleries || []).find(function(g) { return g.id === id; });
+  if (!gallery) { showState('notFound'); return; }
+
+  document.title = gallery.name + ' — David Chen Photography';
+  document.getElementById('galleryTitle').textContent = gallery.name;
+  document.getElementById('galleryMeta').textContent  = (gallery.photos ? gallery.photos.length : 0) + ' photos · David Chen Photography';
+
+  var photos = gallery.photos || [];
+  lightboxPhotos = photos.map(function(pid) { return IMG_BASE + FULL_OPTS + pid; });
+
+  var grid = document.getElementById('galleryGrid');
+  photos.forEach(function(publicId, i) {
+    var item = document.createElement('div');
+    item.className = 'masonry-item';
+    var img = document.createElement('img');
+    img.src     = IMG_BASE + THUMB_OPTS + publicId;
+    img.alt     = 'Photo ' + (i + 1);
+    img.loading = 'lazy';
+    item.appendChild(img);
+    item.addEventListener('click', function() { openLightbox(i); });
+    grid.appendChild(item);
+  });
+
+  showState('gallery');
+})();
+
+function showState(state) {
+  document.getElementById('loadingState').style.display  = state === 'loading'  ? '' : 'none';
+  document.getElementById('notFoundState').style.display = state === 'notFound' ? '' : 'none';
+  document.getElementById('galleryContent').style.display = state === 'gallery' ? '' : 'none';
+}
+
+function openLightbox(index) {
+  lightboxIndex = index;
+  document.getElementById('lightboxImg').src = lightboxPhotos[index];
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(e) {
+  if (e && e.target.tagName === 'IMG') return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function shiftLight(dir) {
+  lightboxIndex = (lightboxIndex + dir + lightboxPhotos.length) % lightboxPhotos.length;
+  document.getElementById('lightboxImg').src = lightboxPhotos[lightboxIndex];
+}
+
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'Escape')     closeLightbox();
+  if (e.key === 'ArrowLeft')  shiftLight(-1);
+  if (e.key === 'ArrowRight') shiftLight(1);
+});
+</script>
+</body>
+</html>
