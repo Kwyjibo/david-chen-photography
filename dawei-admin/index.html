@@ -6,9 +6,11 @@
 <title>Admin — David Chen Photography</title>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root { --black: #1a1a1a; --white: #fff; --gray: #888; --light: #f5f5f5; --border: #e0e0e0; --accent: #1a1a1a; --danger: #c0392b; --success: #27ae60; }
+  :root { --black: #1a1a1a; --white: #fff; --gray: #888; --light: #f5f5f5; --border: #e0e0e0; --accent: #1a1a1a; --danger: #c0392b; --success: #27ae60; --blue: #2980b9; }
   body { font-family: 'DM Sans', -apple-system, sans-serif; background: #fafafa; color: var(--black); -webkit-font-smoothing: antialiased; }
 
   /* ── Login ── */
@@ -36,14 +38,18 @@
   .btn-danger:hover { background: #a93226; }
   .btn-success { background: var(--success); }
   .btn-success:hover { background: #229954; }
+  .btn-blue { background: var(--blue); }
+  .btn-blue:hover { background: #2471a3; }
 
   main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 
   /* ── Tabs ── */
-  .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 32px; }
-  .tab { padding: 12px 24px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--gray); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s; }
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 32px; align-items: center; flex-wrap: wrap; }
+  .tab { padding: 12px 24px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--gray); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s; white-space: nowrap; }
   .tab:hover { color: var(--black); }
   .tab.active { color: var(--black); border-bottom-color: var(--black); }
+  .tab-add { padding: 8px 16px; font-size: 18px; font-weight: 300; cursor: pointer; border: none; background: none; color: var(--gray); margin-left: 4px; margin-bottom: -2px; transition: color 0.2s; }
+  .tab-add:hover { color: var(--black); }
 
   /* ── Panel ── */
   .panel { display: none; }
@@ -56,10 +62,14 @@
   .save-status.saving { color: #e67e22; }
   .save-status.saved  { color: var(--success); }
   .save-status.error  { color: var(--danger); }
+  .selection-info { font-size: 13px; color: var(--blue); font-weight: 600; }
+  .visibility-badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 500; margin-left: 8px; vertical-align: middle; }
+  .visibility-badge.visible { background: #e8f5e9; color: #2e7d32; }
+  .visibility-badge.hidden { background: #fff3e0; color: #e65100; }
 
   /* ── Photo grid ── */
   .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-  .photo-card { position: relative; background: var(--border); border-radius: 2px; overflow: hidden; cursor: grab; user-select: none; }
+  .photo-card { position: relative; background: var(--border); border-radius: 2px; overflow: hidden; cursor: grab; user-select: none; border: 3px solid transparent; transition: border-color 0.15s; }
   .photo-card:active { cursor: grabbing; }
   .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; pointer-events: none; }
   .photo-card .card-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
@@ -69,6 +79,11 @@
   .card-btn-delete:hover { background: var(--danger); }
   .drag-hint { position: absolute; bottom: 6px; left: 6px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; border-radius: 2px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
   .photo-card:hover .drag-hint { opacity: 1; }
+
+  /* ── Multi-select (SortableJS MultiDrag) ── */
+  .photo-card.selected { border-color: var(--blue); }
+  .photo-card.selected::before { content: '\2713'; position: absolute; top: 6px; left: 6px; width: 24px; height: 24px; background: var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; z-index: 5; pointer-events: none; }
+  .sortable-ghost { opacity: 0.4; }
 
   .empty-state { text-align: center; padding: 80px 20px; color: var(--gray); }
   .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
@@ -81,12 +96,12 @@
   .gallery-row-info { flex: 1; }
   .gallery-row-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
   .gallery-row-meta { font-size: 13px; color: var(--gray); }
-  .gallery-row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .gallery-row-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
   .copy-link-btn { position: relative; }
   .copy-tooltip { position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%); background: var(--black); color: white; font-size: 11px; padding: 4px 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .copy-link-btn.copied .copy-tooltip { opacity: 1; }
 
-  /* ── Create gallery modal ── */
+  /* ── Modals ── */
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500; justify-content: center; align-items: center; }
   .modal-bg.open { display: flex; }
   .modal-card { background: var(--white); padding: 40px; width: 420px; max-width: 90vw; }
@@ -97,11 +112,7 @@
   .modal-actions { display: flex; gap: 12px; }
   .modal-actions .btn { flex: 1; }
 
-  /* ── Toast ── */
-  #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: var(--black); color: white; padding: 12px 24px; font-size: 14px; border-radius: 2px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; }
-  #toast.show { opacity: 1; }
-
-  /* ── Delete confirm ── */
+  /* ── Confirm modal ── */
   .confirm-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 600; justify-content: center; align-items: center; }
   .confirm-bg.open { display: flex; }
   .confirm-card { background: var(--white); padding: 32px; width: 360px; max-width: 90vw; text-align: center; }
@@ -109,6 +120,17 @@
   .confirm-card p { font-size: 14px; color: var(--gray); margin-bottom: 24px; }
   .confirm-actions { display: flex; gap: 12px; }
   .confirm-actions .btn { flex: 1; }
+
+  /* ── Toast ── */
+  #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: var(--black); color: white; padding: 12px 24px; font-size: 14px; border-radius: 2px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; white-space: nowrap; }
+  #toast.show { opacity: 1; }
+
+  /* ── Download progress ── */
+  .download-progress { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--white); border: 1px solid var(--border); padding: 16px 24px; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 9998; display: none; min-width: 280px; text-align: center; }
+  .download-progress.active { display: block; }
+  .download-progress .progress-text { font-size: 14px; margin-bottom: 8px; }
+  .download-progress .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .download-progress .progress-fill { height: 100%; background: var(--blue); transition: width 0.3s; width: 0%; }
 </style>
 </head>
 <body>
@@ -136,59 +158,26 @@
   </header>
 
   <main>
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('portfolio')">Portfolio</button>
-      <button class="tab" onclick="switchTab('people')">People</button>
-      <button class="tab" onclick="switchTab('stuff')">Stuff</button>
-      <button class="tab" onclick="switchTab('private')">Private Galleries</button>
-    </div>
+    <div class="tabs" id="tabBar"></div>
+    <div id="panelContainer"></div>
 
-    <!-- Portfolio Panel -->
-    <div class="panel active" id="panel-portfolio">
-      <div class="toolbar">
-        <h2>Portfolio Gallery</h2>
-        <span class="save-status" id="status-portfolio"></span>
-        <button class="btn btn-sm" onclick="openUpload('portfolio')">+ Upload Photos</button>
-        <button class="btn btn-sm btn-success" onclick="saveOrder('portfolio')">Save Order</button>
-      </div>
-      <div class="photo-grid" id="grid-portfolio"></div>
-    </div>
-
-    <!-- People Panel -->
-    <div class="panel" id="panel-people">
-      <div class="toolbar">
-        <h2>People Gallery</h2>
-        <span class="save-status" id="status-people"></span>
-        <button class="btn btn-sm" onclick="openUpload('people')">+ Upload Photos</button>
-        <button class="btn btn-sm btn-success" onclick="saveOrder('people')">Save Order</button>
-      </div>
-      <div class="photo-grid" id="grid-people"></div>
-    </div>
-
-    <!-- Stuff Panel -->
-    <div class="panel" id="panel-stuff">
-      <div class="toolbar">
-        <h2>Stuff Gallery</h2>
-        <span class="save-status" id="status-stuff"></span>
-        <button class="btn btn-sm" onclick="openUpload('stuff')">+ Upload Photos</button>
-        <button class="btn btn-sm btn-success" onclick="saveOrder('stuff')">Save Order</button>
-      </div>
-      <div class="photo-grid" id="grid-stuff"></div>
-    </div>
-
-    <!-- Private Galleries Panel -->
+    <!-- Private Galleries Panel (always present) -->
     <div class="panel" id="panel-private">
-      <div class="toolbar">
+      <div class="toolbar" id="privateToolbar">
         <h2>Private Client Galleries</h2>
-        <button class="btn btn-sm" onclick="openCreateGallery()">+ New Gallery</button>
+        <button class="btn btn-sm" onclick="openCreateGallery('private')">+ New Gallery</button>
       </div>
       <div class="gallery-list" id="privateGalleryList"></div>
       <div id="privateGalleryEditor" style="display:none;">
         <div class="toolbar" style="margin-top:24px;">
           <h2 id="privateEditorTitle">Gallery Photos</h2>
           <span class="save-status" id="status-private"></span>
+          <span class="selection-info" id="sel-info-private" style="display:none;"></span>
+          <button class="btn btn-sm btn-danger" id="sel-delete-private" style="display:none;" onclick="deleteSelected('private')">Delete Selected</button>
+          <button class="btn btn-sm btn-blue" id="sel-download-private" style="display:none;" onclick="downloadSelected('private')">Download Selected</button>
+          <button class="btn btn-sm btn-outline" id="sel-clear-private" style="display:none;" onclick="deselectAll('private')">Deselect</button>
           <button class="btn btn-sm" onclick="openUpload('private')">+ Upload Photos</button>
+          <button class="btn btn-sm btn-blue" onclick="downloadAll('private')">Download All</button>
           <button class="btn btn-sm btn-success" onclick="saveOrder('private')">Save Order</button>
           <button class="btn btn-sm btn-outline" onclick="closePrivateEditor()">← Back</button>
         </div>
@@ -198,15 +187,15 @@
   </main>
 </div>
 
-<!-- ── CREATE GALLERY MODAL ──────────────────────────────────────────────── -->
-<div class="modal-bg" id="createModal">
+<!-- ── CREATE/RENAME GALLERY MODAL ────────────────────────────────────────── -->
+<div class="modal-bg" id="galleryModal">
   <div class="modal-card">
-    <h2>New Private Gallery</h2>
-    <p>Enter a name for this client gallery. A secret link will be created that only people with the link can access.</p>
-    <input type="text" id="newGalleryName" placeholder="e.g. Smith Family 2024" onkeydown="if(event.key==='Enter')createGallery()">
+    <h2 id="galleryModalTitle">New Gallery</h2>
+    <p id="galleryModalDesc">Enter a name for this gallery.</p>
+    <input type="text" id="galleryModalInput" placeholder="e.g. Weddings" onkeydown="if(event.key==='Enter')submitGalleryModal()">
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeCreateGallery()">Cancel</button>
-      <button class="btn" onclick="createGallery()">Create Gallery</button>
+      <button class="btn btn-outline" onclick="closeGalleryModal()">Cancel</button>
+      <button class="btn" id="galleryModalBtn" onclick="submitGalleryModal()">Create</button>
     </div>
   </div>
 </div>
@@ -214,17 +203,23 @@
 <!-- ── DELETE CONFIRM ─────────────────────────────────────────────────────── -->
 <div class="confirm-bg" id="confirmModal">
   <div class="confirm-card">
-    <h3>Delete Photo?</h3>
-    <p>This will permanently remove the photo from Cloudinary and your gallery. This cannot be undone.</p>
+    <h3 id="confirmTitle">Delete Photo?</h3>
+    <p id="confirmDesc">This will permanently remove the photo from Cloudinary. This cannot be undone.</p>
     <div class="confirm-actions">
-      <button class="btn btn-outline" onclick="cancelDelete()">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      <button class="btn btn-outline" onclick="cancelConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="execConfirm()">Delete</button>
     </div>
   </div>
 </div>
 
 <!-- ── TOAST ──────────────────────────────────────────────────────────────── -->
 <div id="toast"></div>
+
+<!-- ── DOWNLOAD PROGRESS ──────────────────────────────────────────────────── -->
+<div class="download-progress" id="downloadProgress">
+  <div class="progress-text" id="downloadText">Preparing download...</div>
+  <div class="progress-bar"><div class="progress-fill" id="downloadFill"></div></div>
+</div>
 
 <script>
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -234,12 +229,24 @@ var API_BASE     = '/api/gallery-api';
 var CONFIG_URL   = 'https://res.cloudinary.com/' + CLOUD_NAME + '/raw/upload/gallery-config.json';
 var IMG_BASE     = 'https://res.cloudinary.com/' + CLOUD_NAME + '/image/upload/';
 var THUMB        = 'w_400,h_400,c_fill,q_auto,f_auto/';
+var FULL_OPTS    = 'q_auto,f_auto/';
 
 var password         = '';
 var config           = null;
 var sortables        = {};
 var currentPrivateId = null;
-var deleteTarget     = null; // { publicId, gallery }
+var currentTab       = null;
+
+// Confirm modal state
+var confirmAction    = null; // function to call on confirm
+
+// Gallery modal state
+var galleryModalAction = null; // function to call on submit
+
+// Mount SortableJS MultiDrag plugin
+if (Sortable.MultiDrag) {
+  Sortable.mount(new Sortable.MultiDrag());
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 async function login() {
@@ -277,7 +284,6 @@ function logout() {
   if (saved) {
     document.getElementById('passwordInput').value = saved;
     password = saved;
-    // Verify silently
     fetch(API_BASE + '?action=auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: saved }) })
       .then(function(r) {
         if (r.ok) {
@@ -289,17 +295,28 @@ function logout() {
   }
 })();
 
-// ── Config load/save ─────────────────────────────────────────────────────────
+// ── Config load/save/migrate ─────────────────────────────────────────────────
+function migrateConfig(cfg) {
+  if (cfg.publicGalleries) return cfg;
+  // Old format: portfolio/people/stuff as top-level arrays
+  var pub = [];
+  if (cfg.portfolio) pub.push({ id: 'portfolio', name: 'Portfolio', visible: true, photos: cfg.portfolio });
+  if (cfg.people) pub.push({ id: 'people', name: 'People', visible: true, photos: cfg.people });
+  if (cfg.stuff) pub.push({ id: 'stuff', name: 'Stuff', visible: true, photos: cfg.stuff });
+  // If none existed, create defaults
+  if (pub.length === 0) pub = [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }];
+  return { publicGalleries: pub, privateGalleries: cfg.privateGalleries || [] };
+}
+
 async function loadConfig() {
   try {
     var res = await fetch(CONFIG_URL + '?t=' + Date.now());
-    config  = res.ok ? await res.json() : { portfolio: [], people: [], stuff: [], privateGalleries: [] };
+    config  = res.ok ? await res.json() : { publicGalleries: [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }], privateGalleries: [] };
   } catch (e) {
-    config = { portfolio: [], people: [], stuff: [], privateGalleries: [] };
+    config = { publicGalleries: [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }], privateGalleries: [] };
   }
-  renderGrid('portfolio', config.portfolio);
-  renderGrid('people',    config.people);
-  renderGrid('stuff',     config.stuff);
+  config = migrateConfig(config);
+  renderTabs();
   renderPrivateList();
 }
 
@@ -311,6 +328,83 @@ async function saveConfig() {
   return res.ok;
 }
 
+// ── Dynamic Tabs ─────────────────────────────────────────────────────────────
+function renderTabs() {
+  var tabBar = document.getElementById('tabBar');
+  var container = document.getElementById('panelContainer');
+  tabBar.innerHTML = '';
+  container.innerHTML = '';
+
+  // Public gallery tabs
+  config.publicGalleries.forEach(function(g, i) {
+    var tabBtn = document.createElement('button');
+    tabBtn.className = 'tab' + (i === 0 ? ' active' : '');
+    tabBtn.textContent = g.name;
+    tabBtn.dataset.galleryId = g.id;
+    tabBtn.onclick = function() { switchTab(g.id); };
+    tabBar.appendChild(tabBtn);
+
+    // Build panel
+    var panel = document.createElement('div');
+    panel.className = 'panel' + (i === 0 ? ' active' : '');
+    panel.id = 'panel-' + g.id;
+
+    var visLabel = g.visible ? '<span class="visibility-badge visible">Visible</span>' : '<span class="visibility-badge hidden">Hidden</span>';
+
+    panel.innerHTML =
+      '<div class="toolbar">' +
+        '<h2>' + escHtml(g.name) + visLabel + '</h2>' +
+        '<span class="save-status" id="status-' + g.id + '"></span>' +
+        '<span class="selection-info" id="sel-info-' + g.id + '" style="display:none;"></span>' +
+        '<button class="btn btn-sm btn-danger" id="sel-delete-' + g.id + '" style="display:none;" onclick="deleteSelected(\'' + g.id + '\')">Delete Selected</button>' +
+        '<button class="btn btn-sm btn-blue" id="sel-download-' + g.id + '" style="display:none;" onclick="downloadSelected(\'' + g.id + '\')">Download Selected</button>' +
+        '<button class="btn btn-sm btn-outline" id="sel-clear-' + g.id + '" style="display:none;" onclick="deselectAll(\'' + g.id + '\')">Deselect</button>' +
+        '<button class="btn btn-sm" onclick="openUpload(\'' + g.id + '\')">+ Upload</button>' +
+        '<button class="btn btn-sm btn-blue" onclick="downloadAll(\'' + g.id + '\')">Download All</button>' +
+        '<button class="btn btn-sm btn-success" onclick="saveOrder(\'' + g.id + '\')">Save Order</button>' +
+        '<button class="btn btn-sm btn-outline" onclick="renamePublicGallery(\'' + g.id + '\')">Rename</button>' +
+        '<button class="btn btn-sm btn-outline" onclick="toggleVisibility(\'' + g.id + '\')">' + (g.visible ? 'Hide' : 'Show') + '</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deletePublicGallery(\'' + g.id + '\')">Delete</button>' +
+      '</div>' +
+      '<div class="photo-grid" id="grid-' + g.id + '"></div>';
+    container.appendChild(panel);
+
+    renderGrid(g.id, g.photos);
+  });
+
+  // + New Gallery button
+  var addBtn = document.createElement('button');
+  addBtn.className = 'tab-add';
+  addBtn.title = 'Add new public gallery';
+  addBtn.textContent = '+';
+  addBtn.onclick = function() { openCreateGallery('public'); };
+  tabBar.appendChild(addBtn);
+
+  // Private Galleries tab (always last)
+  var privTab = document.createElement('button');
+  privTab.className = 'tab' + (config.publicGalleries.length === 0 ? ' active' : '');
+  privTab.textContent = 'Private Galleries';
+  privTab.dataset.galleryId = 'private';
+  privTab.onclick = function() { switchTab('private'); };
+  tabBar.appendChild(privTab);
+
+  // Activate first tab
+  currentTab = config.publicGalleries.length > 0 ? config.publicGalleries[0].id : 'private';
+  if (config.publicGalleries.length === 0) {
+    document.getElementById('panel-private').classList.add('active');
+  }
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  var tab = document.querySelector('.tab[data-gallery-id="' + id + '"]');
+  if (tab) tab.classList.add('active');
+  var panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  currentTab = id;
+}
+
 // ── Grid rendering ────────────────────────────────────────────────────────────
 function renderGrid(gallery, photos) {
   var grid = document.getElementById('grid-' + gallery);
@@ -318,7 +412,7 @@ function renderGrid(gallery, photos) {
   grid.innerHTML = '';
 
   if (!photos || photos.length === 0) {
-    grid.innerHTML = '<div class="empty-state"><div class="icon">📷</div><h3>No photos yet</h3><p>Click "+ Upload Photos" to add images to this gallery.</p></div>';
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📷</div><h3>No photos yet</h3><p>Click "+ Upload" to add images to this gallery.</p></div>';
     return;
   }
 
@@ -326,14 +420,22 @@ function renderGrid(gallery, photos) {
     grid.appendChild(makeCard(publicId, gallery));
   });
 
-  // Init Sortable drag-and-drop
+  // Init SortableJS with MultiDrag
   if (sortables[gallery]) sortables[gallery].destroy();
-  sortables[gallery] = new Sortable(grid, {
+  var opts = {
     animation: 150,
     ghostClass: 'sortable-ghost',
     filter: '.card-btn',
     preventOnFilter: false,
-  });
+    onSelect: function() { updateSelectionUI(gallery); },
+    onDeselect: function() { updateSelectionUI(gallery); },
+  };
+  if (Sortable.MultiDrag) {
+    opts.multiDrag = true;
+    opts.selectedClass = 'selected';
+    opts.multiDragKey = navigator.platform.includes('Mac') ? 'Meta' : 'CTRL';
+  }
+  sortables[gallery] = new Sortable(grid, opts);
 }
 
 function makeCard(publicId, gallery) {
@@ -351,13 +453,13 @@ function makeCard(publicId, gallery) {
 
   var delBtn = document.createElement('button');
   delBtn.className = 'card-btn card-btn-delete';
-  delBtn.textContent = '×';
+  delBtn.textContent = '\u00d7';
   delBtn.title = 'Delete photo';
-  delBtn.onclick = function(e) { e.stopPropagation(); askDelete(publicId, gallery); };
+  delBtn.onclick = function(e) { e.stopPropagation(); askDeleteSingle(publicId, gallery); };
 
   var hint = document.createElement('div');
   hint.className = 'drag-hint';
-  hint.textContent = 'drag to reorder';
+  hint.textContent = 'Ctrl+click to select';
 
   actions.appendChild(delBtn);
   card.appendChild(img);
@@ -366,21 +468,58 @@ function makeCard(publicId, gallery) {
   return card;
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-var currentTab = 'portfolio';
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-  event.target.classList.add('active');
-  document.getElementById('panel-' + name).classList.add('active');
-  currentTab = name;
+// ── Selection UI ─────────────────────────────────────────────────────────────
+function getSelectedIds(gallery) {
+  var grid = document.getElementById('grid-' + gallery);
+  if (!grid) return [];
+  return Array.from(grid.querySelectorAll('.photo-card.selected')).map(function(c) { return c.dataset.id; });
+}
+
+function updateSelectionUI(gallery) {
+  // Delay slightly so SortableJS finishes updating classes
+  setTimeout(function() {
+    var ids = getSelectedIds(gallery);
+    var count = ids.length;
+    var infoEl = document.getElementById('sel-info-' + gallery);
+    var delEl = document.getElementById('sel-delete-' + gallery);
+    var dlEl = document.getElementById('sel-download-' + gallery);
+    var clearEl = document.getElementById('sel-clear-' + gallery);
+    if (!infoEl) return;
+
+    if (count > 0) {
+      infoEl.textContent = count + ' selected';
+      infoEl.style.display = '';
+      delEl.style.display = '';
+      dlEl.style.display = '';
+      clearEl.style.display = '';
+    } else {
+      infoEl.style.display = 'none';
+      delEl.style.display = 'none';
+      dlEl.style.display = 'none';
+      clearEl.style.display = 'none';
+    }
+  }, 50);
+}
+
+function deselectAll(gallery) {
+  var grid = document.getElementById('grid-' + gallery);
+  if (!grid) return;
+  grid.querySelectorAll('.photo-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+  // Also tell SortableJS to deselect
+  if (sortables[gallery] && sortables[gallery].multiDrag) {
+    try { Sortable.utils.deselect(grid.querySelectorAll('.photo-card.selected')); } catch(e) {}
+  }
+  updateSelectionUI(gallery);
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────
-var currentUploadGallery = '';
 function openUpload(gallery) {
-  currentUploadGallery = gallery;
-  var folder = gallery === 'private' ? 'private/' + currentPrivateId : gallery;
+  var folder;
+  if (gallery === 'private') {
+    folder = 'private/' + currentPrivateId;
+  } else {
+    folder = gallery;
+  }
 
   cloudinary.openUploadWidget({
     cloudName:    CLOUD_NAME,
@@ -395,20 +534,18 @@ function openUpload(gallery) {
     if (error) { toast('Upload error: ' + (error.statusText || error)); return; }
     if (result && result.event === 'success') {
       var publicId = result.info.public_id;
-      var key      = gallery === 'private' ? null : gallery;
-      if (key) {
-        if (!config[key]) config[key] = [];
-        config[key].push(publicId);
-        renderGrid(key, config[key]);
-      } else {
+      if (gallery === 'private') {
         var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
         if (pg) { pg.photos.push(publicId); renderGrid('private', pg.photos); }
+      } else {
+        var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+        if (pub) { pub.photos.push(publicId); renderGrid(gallery, pub.photos); }
       }
     }
     if (result && result.event === 'close') {
-      // Auto-save after upload session ends
-      setStatus(gallery, 'saving');
-      saveConfig().then(function(ok) { setStatus(gallery, ok ? 'saved' : 'error'); });
+      var statusKey = gallery;
+      setStatus(statusKey, 'saving');
+      saveConfig().then(function(ok) { setStatus(statusKey, ok ? 'saved' : 'error'); });
     }
   });
 }
@@ -425,7 +562,8 @@ async function saveOrder(gallery) {
     var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
     if (pg) pg.photos = ordered;
   } else {
-    config[gallery] = ordered;
+    var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+    if (pub) pub.photos = ordered;
   }
 
   setStatus(gallery, 'saving');
@@ -442,42 +580,94 @@ function setStatus(gallery, state) {
   if (state === 'saved') setTimeout(function() { el.textContent = ''; el.className = 'save-status'; }, 3000);
 }
 
-// ── Delete ────────────────────────────────────────────────────────────────────
-function askDelete(publicId, gallery) {
-  deleteTarget = { publicId, gallery };
+// ── Delete (single & batch) ──────────────────────────────────────────────────
+function askDeleteSingle(publicId, gallery) {
+  confirmAction = function() { doDeletePhotos([publicId], gallery); };
+  document.getElementById('confirmTitle').textContent = 'Delete Photo?';
+  document.getElementById('confirmDesc').textContent = 'This will permanently remove the photo from Cloudinary. This cannot be undone.';
   document.getElementById('confirmModal').classList.add('open');
 }
-function cancelDelete() {
-  deleteTarget = null;
+
+function deleteSelected(gallery) {
+  var ids = getSelectedIds(gallery);
+  if (ids.length === 0) return;
+  confirmAction = function() { doDeletePhotos(ids, gallery); };
+  document.getElementById('confirmTitle').textContent = 'Delete ' + ids.length + ' Photo' + (ids.length > 1 ? 's' : '') + '?';
+  document.getElementById('confirmDesc').textContent = 'This will permanently remove ' + ids.length + ' photo' + (ids.length > 1 ? 's' : '') + ' from Cloudinary. This cannot be undone.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function cancelConfirm() {
+  confirmAction = null;
   document.getElementById('confirmModal').classList.remove('open');
 }
-async function confirmDelete() {
-  if (!deleteTarget) return;
-  document.getElementById('confirmModal').classList.remove('open');
-  var { publicId, gallery } = deleteTarget;
-  deleteTarget = null;
 
-  // Remove from Cloudinary
+function execConfirm() {
+  document.getElementById('confirmModal').classList.remove('open');
+  if (confirmAction) { confirmAction(); confirmAction = null; }
+}
+
+async function doDeletePhotos(publicIds, gallery) {
+  toast('Deleting ' + publicIds.length + ' photo' + (publicIds.length > 1 ? 's' : '') + '…');
+
+  // Delete from Cloudinary
   await fetch(API_BASE + '?action=delete-photo', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password, publicId })
+    body: JSON.stringify({ password, publicIds: publicIds })
   });
 
   // Remove from config
-  var key = gallery === 'private' ? null : gallery;
-  if (key) {
-    config[key] = (config[key] || []).filter(function(id) { return id !== publicId; });
-    renderGrid(key, config[key]);
-  } else {
+  var idsSet = {};
+  publicIds.forEach(function(id) { idsSet[id] = true; });
+
+  if (gallery === 'private') {
     var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
-    if (pg) { pg.photos = pg.photos.filter(function(id) { return id !== publicId; }); renderGrid('private', pg.photos); }
+    if (pg) { pg.photos = pg.photos.filter(function(id) { return !idsSet[id]; }); renderGrid('private', pg.photos); }
+  } else {
+    var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+    if (pub) { pub.photos = pub.photos.filter(function(id) { return !idsSet[id]; }); renderGrid(gallery, pub.photos); }
   }
 
   await saveConfig();
-  toast('Photo deleted.');
+  toast(publicIds.length + ' photo' + (publicIds.length > 1 ? 's' : '') + ' deleted.');
 }
 
-// ── Private Galleries ─────────────────────────────────────────────────────────
+// ── Public Gallery Management ────────────────────────────────────────────────
+function renamePublicGallery(id) {
+  var g = config.publicGalleries.find(function(g) { return g.id === id; });
+  if (!g) return;
+  openGalleryModal('Rename Gallery', 'Enter a new name for this gallery.', g.name, 'Rename', function(name) {
+    g.name = name;
+    saveConfig().then(function() { renderTabs(); switchTab(id); toast('Gallery renamed!'); });
+  });
+}
+
+function toggleVisibility(id) {
+  var g = config.publicGalleries.find(function(g) { return g.id === id; });
+  if (!g) return;
+  g.visible = !g.visible;
+  setStatus(id, 'saving');
+  saveConfig().then(function(ok) {
+    setStatus(id, ok ? 'saved' : 'error');
+    renderTabs();
+    switchTab(id);
+    toast(g.visible ? 'Gallery is now visible on site.' : 'Gallery hidden from site.');
+  });
+}
+
+function deletePublicGallery(id) {
+  var g = config.publicGalleries.find(function(g) { return g.id === id; });
+  if (!g) return;
+  confirmAction = function() {
+    config.publicGalleries = config.publicGalleries.filter(function(g) { return g.id !== id; });
+    saveConfig().then(function() { renderTabs(); toast('Gallery "' + g.name + '" deleted.'); });
+  };
+  document.getElementById('confirmTitle').textContent = 'Delete "' + g.name + '" Gallery?';
+  document.getElementById('confirmDesc').textContent = 'This will remove the gallery from your site. Photos will remain on Cloudinary.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ── Private Gallery Management ───────────────────────────────────────────────
 function renderPrivateList() {
   var list = document.getElementById('privateGalleryList');
   list.innerHTML = '';
@@ -501,6 +691,7 @@ function renderPrivateList() {
       '</div>' +
       '<div class="gallery-row-actions">' +
         '<button class="btn btn-sm btn-outline copy-link-btn" onclick="copyLink(this, \'' + link + '\')"><span class="copy-tooltip">Copied!</span>Copy Link</button>' +
+        '<button class="btn btn-sm btn-outline" onclick="renamePrivateGallery(\'' + g.id + '\')">Rename</button>' +
         '<button class="btn btn-sm" onclick="openPrivateEditor(\'' + g.id + '\', \'' + escHtml(g.name) + '\')">Manage Photos</button>' +
         '<button class="btn btn-sm btn-danger" onclick="deleteGallery(\'' + g.id + '\')">Delete</button>' +
       '</div>';
@@ -518,7 +709,7 @@ function copyLink(btn, link) {
 function openPrivateEditor(id, name) {
   currentPrivateId = id;
   document.getElementById('privateEditorTitle').textContent = name;
-  document.getElementById('privateGalleryList').parentElement.querySelector('.toolbar').style.display = 'none';
+  document.getElementById('privateToolbar').style.display = 'none';
   document.getElementById('privateGalleryList').style.display = 'none';
   document.getElementById('privateGalleryEditor').style.display = 'block';
   var pg = config.privateGalleries.find(function(g) { return g.id === id; });
@@ -527,51 +718,175 @@ function openPrivateEditor(id, name) {
 
 function closePrivateEditor() {
   currentPrivateId = null;
-  document.getElementById('privateGalleryList').parentElement.querySelector('.toolbar').style.display = '';
+  document.getElementById('privateToolbar').style.display = '';
   document.getElementById('privateGalleryList').style.display = '';
   document.getElementById('privateGalleryEditor').style.display = 'none';
 }
 
-// ── Create gallery modal ──────────────────────────────────────────────────────
-function openCreateGallery() { document.getElementById('createModal').classList.add('open'); document.getElementById('newGalleryName').focus(); }
-function closeCreateGallery() { document.getElementById('createModal').classList.remove('open'); document.getElementById('newGalleryName').value = ''; }
-
-async function createGallery() {
-  var name = document.getElementById('newGalleryName').value.trim();
-  if (!name) return;
-
-  var res  = await fetch(API_BASE + '?action=create-gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-  var data = await res.json();
-  var id   = data.id;
-
-  var gallery = { id: id, name: name, created: new Date().toLocaleDateString(), photos: [] };
-  if (!config.privateGalleries) config.privateGalleries = [];
-  config.privateGalleries.push(gallery);
-
-  await saveConfig();
-  renderPrivateList();
-  closeCreateGallery();
-  toast('Gallery "' + name + '" created!');
+function renamePrivateGallery(id) {
+  var g = config.privateGalleries.find(function(g) { return g.id === id; });
+  if (!g) return;
+  openGalleryModal('Rename Gallery', 'Enter a new name for this gallery.', g.name, 'Rename', function(name) {
+    g.name = name;
+    saveConfig().then(function() { renderPrivateList(); toast('Gallery renamed!'); });
+  });
 }
 
 async function deleteGallery(id) {
-  if (!confirm('Delete this entire gallery? This cannot be undone.')) return;
-  config.privateGalleries = config.privateGalleries.filter(function(g) { return g.id !== id; });
+  confirmAction = function() {
+    config.privateGalleries = config.privateGalleries.filter(function(g) { return g.id !== id; });
+    saveConfig().then(function() { renderPrivateList(); toast('Gallery deleted.'); });
+  };
+  document.getElementById('confirmTitle').textContent = 'Delete Gallery?';
+  document.getElementById('confirmDesc').textContent = 'Delete this entire gallery? This cannot be undone.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ── Gallery Modal (create / rename) ──────────────────────────────────────────
+function openGalleryModal(title, desc, value, btnText, onSubmit) {
+  document.getElementById('galleryModalTitle').textContent = title;
+  document.getElementById('galleryModalDesc').textContent = desc;
+  document.getElementById('galleryModalInput').value = value || '';
+  document.getElementById('galleryModalBtn').textContent = btnText;
+  galleryModalAction = onSubmit;
+  document.getElementById('galleryModal').classList.add('open');
+  document.getElementById('galleryModalInput').focus();
+}
+
+function closeGalleryModal() {
+  document.getElementById('galleryModal').classList.remove('open');
+  document.getElementById('galleryModalInput').value = '';
+  galleryModalAction = null;
+}
+
+function submitGalleryModal() {
+  var name = document.getElementById('galleryModalInput').value.trim();
+  if (!name) return;
+  closeGalleryModal();
+  if (galleryModalAction) galleryModalAction(name);
+}
+
+function openCreateGallery(type) {
+  if (type === 'public') {
+    openGalleryModal('New Public Gallery', 'Enter a name for this gallery. It will appear in the site navigation.', '', 'Create', function(name) {
+      createPublicGallery(name);
+    });
+  } else {
+    openGalleryModal('New Private Gallery', 'Enter a name for this client gallery. A secret link will be created that only people with the link can access.', '', 'Create', function(name) {
+      createPrivateGallery(name);
+    });
+  }
+}
+
+async function createPublicGallery(name) {
+  var res = await fetch(API_BASE + '?action=create-gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password, type: 'public' }) });
+  var data = await res.json();
+  var gallery = { id: data.id, name: name, visible: true, photos: [] };
+  config.publicGalleries.push(gallery);
+  await saveConfig();
+  renderTabs();
+  switchTab(data.id);
+  toast('Gallery "' + name + '" created!');
+}
+
+async function createPrivateGallery(name) {
+  var res = await fetch(API_BASE + '?action=create-gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+  var data = await res.json();
+  var gallery = { id: data.id, name: name, created: new Date().toLocaleDateString(), photos: [] };
+  if (!config.privateGalleries) config.privateGalleries = [];
+  config.privateGalleries.push(gallery);
   await saveConfig();
   renderPrivateList();
-  toast('Gallery deleted.');
+  toast('Gallery "' + name + '" created!');
+}
+
+// ── Download ─────────────────────────────────────────────────────────────────
+function downloadAll(gallery) {
+  var photos, name;
+  if (gallery === 'private') {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    if (!pg || !pg.photos || pg.photos.length === 0) { toast('No photos to download.'); return; }
+    photos = pg.photos;
+    name = pg.name;
+  } else {
+    var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+    if (!pub || !pub.photos || pub.photos.length === 0) { toast('No photos to download.'); return; }
+    photos = pub.photos;
+    name = pub.name;
+  }
+  downloadPhotos(photos, name);
+}
+
+function downloadSelected(gallery) {
+  var ids = getSelectedIds(gallery);
+  if (ids.length === 0) { toast('No photos selected.'); return; }
+  var name;
+  if (gallery === 'private') {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    name = pg ? pg.name : 'gallery';
+  } else {
+    var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+    name = pub ? pub.name : 'gallery';
+  }
+  downloadPhotos(ids, name + ' (selected)');
+}
+
+async function downloadPhotos(publicIds, galleryName) {
+  if (typeof JSZip === 'undefined') { toast('Download library not loaded. Please refresh.'); return; }
+
+  var prog = document.getElementById('downloadProgress');
+  var text = document.getElementById('downloadText');
+  var fill = document.getElementById('downloadFill');
+  prog.classList.add('active');
+  fill.style.width = '0%';
+
+  var zip = new JSZip();
+  var total = publicIds.length;
+  var failed = 0;
+
+  for (var i = 0; i < total; i++) {
+    text.textContent = 'Downloading ' + (i + 1) + ' of ' + total + '…';
+    fill.style.width = Math.round(((i + 1) / total) * 90) + '%';
+    try {
+      var url = IMG_BASE + FULL_OPTS + publicIds[i];
+      var resp = await fetch(url);
+      if (!resp.ok) { failed++; continue; }
+      var blob = await resp.blob();
+      var ext = blob.type === 'image/png' ? '.png' : blob.type === 'image/webp' ? '.webp' : '.jpg';
+      var filename = publicIds[i].split('/').pop() + ext;
+      zip.file(filename, blob);
+    } catch (e) { failed++; }
+  }
+
+  text.textContent = 'Creating zip file…';
+  fill.style.width = '95%';
+
+  try {
+    var content = await zip.generateAsync({ type: 'blob' });
+    var safeName = galleryName.replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'photos';
+    saveAs(content, safeName + '.zip');
+    fill.style.width = '100%';
+    text.textContent = 'Download complete!';
+  } catch (e) {
+    text.textContent = 'Error creating zip.';
+  }
+
+  setTimeout(function() { prog.classList.remove('active'); }, 2000);
+  if (failed > 0) toast(failed + ' photo(s) could not be downloaded.');
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+var toastTimer = null;
 function toast(msg) {
   var el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(function() { el.classList.remove('show'); }, 3000);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3000);
 }
 
 function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 </script>
 </body>

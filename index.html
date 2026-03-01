@@ -167,32 +167,17 @@
 </div>
 
 <nav class="light overview-nav" id="mainNav">
-  <a href="#" class="logo" onclick="showSection('portfolio')"><img src="logo.png" alt="David Chen Photography" class="logo-img"></a>
-  <a href="#" class="logo-overview" onclick="showSection('portfolio')"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
+  <a href="#" class="logo" onclick="showFirstGallery()"><img src="logo.png" alt="David Chen Photography" class="logo-img"></a>
+  <a href="#" class="logo-overview" onclick="showFirstGallery()"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
   <ul class="nav-links" id="navLinks">
-    <li><a href="#" class="active" data-section="portfolio" onclick="showSection('portfolio')">Portfolio</a></li>
-    <li><a href="#" data-section="people" onclick="showSection('people')">People</a></li>
-    <li><a href="#" data-section="things" onclick="showSection('things')">Stuff</a></li>
-    <li><a href="#" data-section="pricing" onclick="showSection('pricing')">Pricing</a></li>
+    <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing')">Pricing</a></li>
     <li><a href="#" data-section="contact" onclick="showSection('contact')">Contact</a></li>
     <li><a href="https://instagram.com" target="_blank" class="ig-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a></li>
   </ul>
   <button class="hamburger" id="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></button>
 </nav>
 
-<div class="section active" id="portfolio">
-  <div class="gallery-section overview-gallery">
-    <div class="masonry" id="portfolioGrid"></div>
-  </div>
-</div>
-
-<div class="section sub-gallery-section" id="people">
-  <div class="masonry" id="peopleGrid"></div>
-</div>
-
-<div class="section sub-gallery-section" id="things">
-  <div class="masonry" id="thingsGrid"></div>
-</div>
+<div id="gallerySections"></div>
 
 <div class="section pricing-section" id="pricing">
   <div class="pricing-header">
@@ -311,17 +296,30 @@ var IMG_BASE    = 'https://res.cloudinary.com/' + CLOUD_NAME + '/image/upload/';
 var THUMB_OPTS  = 'w_900,c_scale,q_auto,f_auto/';
 var FULL_OPTS   = 'q_auto,f_auto/';
 
-var galleryConfig = null;
-var loadedGrids   = {};
+var galleryConfig  = null;
+var loadedGrids    = {};
+var galleryIds     = []; // ordered list of visible gallery IDs
+var firstGalleryId = null;
+
+// ── Config migration ─────────────────────────────────────────────────────────
+function migrateConfig(cfg) {
+  if (cfg.publicGalleries) return cfg;
+  var pub = [];
+  if (cfg.portfolio) pub.push({ id: 'portfolio', name: 'Portfolio', visible: true, photos: cfg.portfolio });
+  if (cfg.people) pub.push({ id: 'people', name: 'People', visible: true, photos: cfg.people });
+  if (cfg.stuff) pub.push({ id: 'stuff', name: 'Stuff', visible: true, photos: cfg.stuff });
+  if (pub.length === 0) pub = [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }];
+  return { publicGalleries: pub, privateGalleries: cfg.privateGalleries || [] };
+}
 
 async function fetchConfig() {
   if (galleryConfig) return galleryConfig;
   try {
     var res = await fetch(CONFIG_URL + '?t=' + Date.now());
     if (!res.ok) throw new Error('no config');
-    galleryConfig = await res.json();
+    galleryConfig = migrateConfig(await res.json());
   } catch (e) {
-    galleryConfig = { portfolio: [], people: [], stuff: [], privateGalleries: [] };
+    galleryConfig = { publicGalleries: [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }], privateGalleries: [] };
   }
   return galleryConfig;
 }
@@ -354,32 +352,79 @@ function populateGridFromConfig(gridId, photos) {
   });
 }
 
+// ── Build dynamic nav + sections ─────────────────────────────────────────────
+function buildGalleries(config) {
+  var navList = document.getElementById('navLinks');
+  var pricingItem = document.getElementById('pricingNavItem');
+  var container = document.getElementById('gallerySections');
+  container.innerHTML = '';
+  galleryIds = [];
+
+  var visibleGalleries = (config.publicGalleries || []).filter(function(g) { return g.visible; });
+
+  visibleGalleries.forEach(function(g, i) {
+    galleryIds.push(g.id);
+
+    // Nav link (insert before Pricing)
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#';
+    a.dataset.section = g.id;
+    a.textContent = g.name;
+    if (i === 0) a.classList.add('active');
+    a.onclick = function(e) { e.preventDefault(); showSection(g.id); };
+    li.appendChild(a);
+    navList.insertBefore(li, pricingItem);
+
+    // Gallery section
+    var sec = document.createElement('div');
+    sec.id = g.id;
+    if (i === 0) {
+      sec.className = 'section active';
+      sec.innerHTML = '<div class="gallery-section overview-gallery"><div class="masonry" id="grid-' + g.id + '"></div></div>';
+    } else {
+      sec.className = 'section sub-gallery-section';
+      sec.innerHTML = '<div class="masonry" id="grid-' + g.id + '"></div>';
+    }
+    container.appendChild(sec);
+  });
+
+  firstGalleryId = galleryIds.length > 0 ? galleryIds[0] : null;
+}
+
+function showFirstGallery() {
+  if (firstGalleryId) showSection(firstGalleryId);
+}
+
 // ── Section switching ────────────────────────────────────────────────────────
-async function showSection(name) {
+function showSection(name) {
   var sections = document.querySelectorAll('.section');
   sections.forEach(function(s) { s.classList.remove('active'); });
   var links = document.querySelectorAll('.nav-links a[data-section]');
   links.forEach(function(l) { l.classList.remove('active'); });
 
-  document.getElementById(name).classList.add('active');
+  var sec = document.getElementById(name);
+  if (sec) sec.classList.add('active');
   var activeLink = document.querySelector('.nav-links a[data-section="' + name + '"]');
   if (activeLink) activeLink.classList.add('active');
 
+  // Nav style: first gallery gets overview-nav, other galleries get large-logo
   var nav = document.getElementById('mainNav');
   nav.className = 'light';
-  if (name === 'portfolio' || name === 'contact' || name === 'pricing') nav.classList.add('overview-nav');
-  if (name === 'people' || name === 'things') nav.classList.add('large-logo');
+  if (name === firstGalleryId || name === 'contact' || name === 'pricing') {
+    nav.classList.add('overview-nav');
+  } else if (galleryIds.indexOf(name) > 0) {
+    nav.classList.add('large-logo');
+  }
 
   closeMobile();
   window.scrollTo(0, 0);
 
-  // Load gallery from Cloudinary if not already loaded
-  if ((name === 'portfolio' || name === 'people' || name === 'things') && !loadedGrids[name]) {
+  // Lazy load gallery photos
+  if (galleryIds.indexOf(name) !== -1 && !loadedGrids[name]) {
     loadedGrids[name] = true;
-    var config = await fetchConfig();
-    var key    = name === 'things' ? 'stuff' : name;
-    var gridId = name === 'things' ? 'thingsGrid' : name + 'Grid';
-    populateGridFromConfig(gridId, config[key]);
+    var g = galleryConfig.publicGalleries.find(function(pg) { return pg.id === name; });
+    if (g) populateGridFromConfig('grid-' + g.id, g.photos);
   }
 }
 
@@ -420,8 +465,15 @@ function closeMobile() {
 // ── Init ─────────────────────────────────────────────────────────────────────
 (async function init() {
   var config = await fetchConfig();
-  populateGridFromConfig('portfolioGrid', config.portfolio);
-  loadedGrids['portfolio'] = true;
+  buildGalleries(config);
+  // Load first gallery immediately
+  if (firstGalleryId) {
+    var first = config.publicGalleries.find(function(g) { return g.id === firstGalleryId; });
+    if (first) {
+      populateGridFromConfig('grid-' + first.id, first.photos);
+      loadedGrids[firstGalleryId] = true;
+    }
+  }
 })();
 
 setTimeout(function() {

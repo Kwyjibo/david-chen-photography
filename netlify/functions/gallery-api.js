@@ -63,12 +63,13 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: HEADERS, body: JSON.stringify(data) };
     }
 
-    // ── Delete Photo ──────────────────────────────────────────────────────
+    // ── Delete Photo(s) ────────────────────────────────────────────────────
     if (action === 'delete-photo') {
-      const { publicId } = body;
+      const ids = body.publicIds || (body.publicId ? [body.publicId] : []);
+      if (ids.length === 0) return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: 'No photo IDs provided' }) };
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/image/upload`,
-        { method: 'DELETE', headers: { Authorization: basicAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ public_ids: [publicId] }) }
+        { method: 'DELETE', headers: { Authorization: basicAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ public_ids: ids }) }
       );
       const data = await res.json();
       return { statusCode: 200, headers: HEADERS, body: JSON.stringify(data) };
@@ -85,9 +86,10 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: HEADERS, body: JSON.stringify(data) };
     }
 
-    // ── Create Private Gallery folder (just returns the ID) ──────────────
+    // ── Create Gallery (returns a unique ID) ─────────────────────────────
     if (action === 'create-gallery') {
-      const id = 'g-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const prefix = body.type === 'public' ? 'pg-' : 'g-';
+      const id = prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       return { statusCode: 200, headers: HEADERS, body: JSON.stringify({ id }) };
     }
 
