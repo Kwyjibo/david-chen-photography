@@ -854,8 +854,9 @@ function closeGalleryModal() {
 function submitGalleryModal() {
   var name = document.getElementById('galleryModalInput').value.trim();
   if (!name) return;
+  var action = galleryModalAction;
   closeGalleryModal();
-  if (galleryModalAction) galleryModalAction(name);
+  if (action) action(name);
 }
 
 function openCreateGallery(type) {
