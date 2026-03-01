@@ -178,6 +178,8 @@
           <span class="selection-info" id="sel-info-private" style="display:none;"></span>
           <button class="btn btn-sm btn-danger" id="sel-delete-private" style="display:none;" onclick="deleteSelected('private')">Delete Selected</button>
           <button class="btn btn-sm btn-blue" id="sel-download-private" style="display:none;" onclick="downloadSelected('private')">Download Selected</button>
+          <button class="btn btn-sm btn-outline" id="sel-start-private" style="display:none;" onclick="moveSelected('private', 'start')">Move to Start</button>
+          <button class="btn btn-sm btn-outline" id="sel-end-private" style="display:none;" onclick="moveSelected('private', 'end')">Move to End</button>
           <button class="btn btn-sm btn-outline" id="sel-clear-private" style="display:none;" onclick="deselectAll('private')">Deselect</button>
           <button class="btn btn-sm btn-outline" id="sel-toggle-private" onclick="toggleSelectMode('private')">Select</button>
           <button class="btn btn-sm" onclick="openUpload('private')">+ Upload Photos</button>
@@ -358,6 +360,8 @@ function renderTabs() {
         '<span class="selection-info" id="sel-info-' + g.id + '" style="display:none;"></span>' +
         '<button class="btn btn-sm btn-danger" id="sel-delete-' + g.id + '" style="display:none;" onclick="deleteSelected(\'' + g.id + '\')">Delete Selected</button>' +
         '<button class="btn btn-sm btn-blue" id="sel-download-' + g.id + '" style="display:none;" onclick="downloadSelected(\'' + g.id + '\')">Download Selected</button>' +
+        '<button class="btn btn-sm btn-outline" id="sel-start-' + g.id + '" style="display:none;" onclick="moveSelected(\'' + g.id + '\', \'start\')">Move to Start</button>' +
+        '<button class="btn btn-sm btn-outline" id="sel-end-' + g.id + '" style="display:none;" onclick="moveSelected(\'' + g.id + '\', \'end\')">Move to End</button>' +
         '<button class="btn btn-sm btn-outline" id="sel-clear-' + g.id + '" style="display:none;" onclick="deselectAll(\'' + g.id + '\')">Deselect</button>' +
         '<button class="btn btn-sm btn-outline" id="sel-toggle-' + g.id + '" onclick="toggleSelectMode(\'' + g.id + '\')">Select</button>' +
         '<button class="btn btn-sm" onclick="openUpload(\'' + g.id + '\')">+ Upload</button>' +
@@ -519,6 +523,8 @@ function updateSelectionUI(gallery) {
   var infoEl = document.getElementById('sel-info-' + gallery);
   var delEl = document.getElementById('sel-delete-' + gallery);
   var dlEl = document.getElementById('sel-download-' + gallery);
+  var startEl = document.getElementById('sel-start-' + gallery);
+  var endEl = document.getElementById('sel-end-' + gallery);
   var clearEl = document.getElementById('sel-clear-' + gallery);
   if (!infoEl) return;
 
@@ -527,11 +533,15 @@ function updateSelectionUI(gallery) {
     infoEl.style.display = '';
     delEl.style.display = '';
     dlEl.style.display = '';
+    if (startEl) startEl.style.display = '';
+    if (endEl) endEl.style.display = '';
     clearEl.style.display = '';
   } else {
     infoEl.style.display = 'none';
     delEl.style.display = 'none';
     dlEl.style.display = 'none';
+    if (startEl) startEl.style.display = 'none';
+    if (endEl) endEl.style.display = 'none';
     clearEl.style.display = 'none';
   }
 }
@@ -541,6 +551,55 @@ function deselectAll(gallery) {
   if (!grid) return;
   grid.querySelectorAll('.photo-card.selected').forEach(function(c) { c.classList.remove('selected'); });
   updateSelectionUI(gallery);
+}
+
+function moveSelected(gallery, direction) {
+  var selectedIds = getSelectedIds(gallery);
+  if (selectedIds.length === 0) return;
+
+  // Get the photos array from config
+  var photos;
+  if (gallery === 'private') {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    if (!pg) return;
+    photos = pg.photos;
+  } else {
+    var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+    if (!pub) return;
+    photos = pub.photos;
+  }
+
+  // Split into selected and remaining, preserving relative order
+  var selectedSet = {};
+  selectedIds.forEach(function(id) { selectedSet[id] = true; });
+  var selected = photos.filter(function(id) { return selectedSet[id]; });
+  var rest = photos.filter(function(id) { return !selectedSet[id]; });
+
+  // Rebuild array with selected at start or end
+  var newOrder;
+  if (direction === 'start') {
+    newOrder = selected.concat(rest);
+  } else {
+    newOrder = rest.concat(selected);
+  }
+
+  // Update config
+  if (gallery === 'private') {
+    config.privateGalleries.find(function(g) { return g.id === currentPrivateId; }).photos = newOrder;
+  } else {
+    config.publicGalleries.find(function(g) { return g.id === gallery; }).photos = newOrder;
+  }
+
+  // Re-render grid (preserves select mode) and re-select the moved photos
+  renderGrid(gallery, newOrder);
+  var grid = document.getElementById('grid-' + gallery);
+  if (grid) {
+    grid.querySelectorAll('.photo-card').forEach(function(c) {
+      if (selectedSet[c.dataset.id]) c.classList.add('selected');
+    });
+  }
+  updateSelectionUI(gallery);
+  toast('Moved ' + selected.length + ' photo' + (selected.length > 1 ? 's' : '') + ' to ' + direction + '. Click Save Order to save.');
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────
