@@ -134,6 +134,27 @@
   .download-progress .progress-text { font-size: 14px; margin-bottom: 8px; }
   .download-progress .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
   .download-progress .progress-fill { height: 100%; background: var(--blue); transition: width 0.3s; width: 0%; }
+
+  /* ── Page Editors (Pricing / Contact) ── */
+  .editor-section { margin-bottom: 24px; }
+  .editor-label { display: block; font-size: 13px; font-weight: 600; color: var(--black); margin-bottom: 6px; letter-spacing: 0.3px; text-transform: uppercase; }
+  .editor-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); background: var(--light); font-family: inherit; font-size: 15px; outline: none; transition: border-color 0.2s, background 0.2s; }
+  .editor-input:focus { border-color: #999; background: var(--white); }
+  .editor-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); background: var(--light); font-family: inherit; font-size: 15px; outline: none; resize: vertical; min-height: 80px; line-height: 1.6; transition: border-color 0.2s, background 0.2s; }
+  .editor-textarea:focus { border-color: #999; background: var(--white); }
+  .card-editor { border: 1px solid var(--border); background: var(--white); padding: 20px; margin-bottom: 16px; }
+  .card-editor-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .card-editor-header .editor-input { flex: 1; font-weight: 600; }
+  .card-editor-header .card-editor-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .feature-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .feature-row .editor-input { flex: 1; padding: 10px 12px; font-size: 14px; }
+  .feature-row .btn-remove-feature { width: 32px; height: 32px; border: none; background: transparent; color: var(--danger); font-size: 18px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .feature-row .btn-remove-feature:hover { background: #fbe9e7; }
+  .contact-photo-preview { margin-bottom: 12px; }
+  .contact-photo-preview img { max-width: 300px; max-height: 300px; object-fit: cover; border: 1px solid var(--border); display: block; }
+  .editor-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 768px) { .editor-columns { grid-template-columns: 1fr; } }
+  .editor-hint { font-size: 12px; color: var(--gray); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -163,6 +184,12 @@
   <main>
     <div class="tabs" id="tabBar"></div>
     <div id="panelContainer"></div>
+
+    <!-- Pricing Editor Panel -->
+    <div class="panel" id="panel-pricing"></div>
+
+    <!-- Contact Editor Panel -->
+    <div class="panel" id="panel-contact"></div>
 
     <!-- Private Galleries Panel (always present) -->
     <div class="panel" id="panel-private">
@@ -299,15 +326,36 @@ function logout() {
 
 // ── Config load/save/migrate ─────────────────────────────────────────────────
 function migrateConfig(cfg) {
-  if (cfg.publicGalleries) return cfg;
-  // Old format: portfolio/people/stuff as top-level arrays
-  var pub = [];
-  if (cfg.portfolio) pub.push({ id: 'portfolio', name: 'Portfolio', visible: true, photos: cfg.portfolio });
-  if (cfg.people) pub.push({ id: 'people', name: 'People', visible: true, photos: cfg.people });
-  if (cfg.stuff) pub.push({ id: 'stuff', name: 'Stuff', visible: true, photos: cfg.stuff });
-  // If none existed, create defaults
-  if (pub.length === 0) pub = [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }];
-  return { publicGalleries: pub, privateGalleries: cfg.privateGalleries || [] };
+  if (!cfg.publicGalleries) {
+    // Old format: portfolio/people/stuff as top-level arrays
+    var pub = [];
+    if (cfg.portfolio) pub.push({ id: 'portfolio', name: 'Portfolio', visible: true, photos: cfg.portfolio });
+    if (cfg.people) pub.push({ id: 'people', name: 'People', visible: true, photos: cfg.people });
+    if (cfg.stuff) pub.push({ id: 'stuff', name: 'Stuff', visible: true, photos: cfg.stuff });
+    if (pub.length === 0) pub = [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }];
+    cfg = { publicGalleries: pub, privateGalleries: cfg.privateGalleries || [] };
+  }
+  // Add pricing defaults if missing
+  if (!cfg.pricing) {
+    cfg.pricing = {
+      title: 'Portrait Packages',
+      cards: [
+        { id: 'card-default-1', name: 'Classic Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '15 artistically edited full resolution images'], price: 'Starting at $629' },
+        { id: 'card-default-2', name: 'Signature Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '30 artistically edited full resolution images'], price: 'Starting at $829' },
+        { id: 'card-default-3', name: 'Luxe Portrait Session', features: ['Up to 6 people (groups more than 6, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1.5 hours', 'Private online gallery', '50+ artistically edited full resolution images'], price: 'Starting at $1,129' },
+        { id: 'card-default-4', name: 'Event Photography', features: ['Birthday and holiday parties or any other non-wedding event', 'Session up to 2 hours', '$300 up to each additional hour', 'Private online gallery', '100+ artistically edited full resolution images'], price: 'Starting at $1,299' }
+      ]
+    };
+  }
+  // Add contact defaults if missing
+  if (!cfg.contact) {
+    cfg.contact = {
+      email: 'David@davidchenphotography.com',
+      altText: 'Please fill out contact form or you can reach me at',
+      photoPublicId: ''
+    };
+  }
+  return cfg;
 }
 
 async function loadConfig() {
@@ -385,7 +433,7 @@ function renderTabs() {
   addBtn.onclick = function() { openCreateGallery('public'); };
   tabBar.appendChild(addBtn);
 
-  // Private Galleries tab (always last)
+  // Private Galleries tab
   var privTab = document.createElement('button');
   privTab.className = 'tab' + (config.publicGalleries.length === 0 ? ' active' : '');
   privTab.textContent = 'Private Galleries';
@@ -393,11 +441,31 @@ function renderTabs() {
   privTab.onclick = function() { switchTab('private'); };
   tabBar.appendChild(privTab);
 
+  // Pricing tab
+  var pricingTab = document.createElement('button');
+  pricingTab.className = 'tab';
+  pricingTab.textContent = 'Pricing';
+  pricingTab.dataset.galleryId = 'pricing';
+  pricingTab.onclick = function() { switchTab('pricing'); };
+  tabBar.appendChild(pricingTab);
+
+  // Contact tab
+  var contactTab = document.createElement('button');
+  contactTab.className = 'tab';
+  contactTab.textContent = 'Contact';
+  contactTab.dataset.galleryId = 'contact';
+  contactTab.onclick = function() { switchTab('contact'); };
+  tabBar.appendChild(contactTab);
+
   // Activate first tab
   currentTab = config.publicGalleries.length > 0 ? config.publicGalleries[0].id : 'private';
   if (config.publicGalleries.length === 0) {
     document.getElementById('panel-private').classList.add('active');
   }
+
+  // Render page editors
+  renderPricingPanel();
+  renderContactPanel();
 }
 
 function switchTab(id) {
@@ -966,6 +1034,230 @@ async function downloadPhotos(publicIds, galleryName) {
 
   setTimeout(function() { prog.classList.remove('active'); }, 2000);
   if (failed > 0) toast(failed + ' photo(s) could not be downloaded.');
+}
+
+// ── Pricing Editor ─────────────────────────────────────────────────────────────
+function renderPricingPanel() {
+  var panel = document.getElementById('panel-pricing');
+  if (!panel || !config.pricing) return;
+  var pricing = config.pricing;
+  var html =
+    '<div class="toolbar">' +
+      '<h2>Pricing Page</h2>' +
+      '<span class="save-status" id="status-pricing"></span>' +
+      '<button class="btn btn-sm btn-success" onclick="savePricingChanges()">Save Changes</button>' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Section Title</label>' +
+      '<input type="text" class="editor-input" id="pricing-title-input" value="' + escHtml(pricing.title) + '">' +
+    '</div>' +
+    '<div id="pricing-cards-editor">';
+
+  pricing.cards.forEach(function(card, ci) {
+    html += buildCardEditorHTML(card, ci, pricing.cards.length);
+  });
+
+  html += '</div>' +
+    '<div style="margin-top:16px;">' +
+      '<button class="btn btn-sm btn-outline" onclick="addPricingCard()">+ Add Pricing Card</button>' +
+    '</div>';
+
+  panel.innerHTML = html;
+}
+
+function buildCardEditorHTML(card, index, total) {
+  var html =
+    '<div class="card-editor" data-card-id="' + card.id + '">' +
+      '<div class="card-editor-header">' +
+        '<input type="text" class="editor-input" id="card-name-' + card.id + '" value="' + escHtml(card.name) + '" placeholder="Package name">' +
+        '<div class="card-editor-actions">';
+  if (index > 0) {
+    html += '<button class="btn btn-sm btn-outline" onclick="movePricingCard(\'' + card.id + '\', -1)" title="Move up">↑</button>';
+  }
+  if (index < total - 1) {
+    html += '<button class="btn btn-sm btn-outline" onclick="movePricingCard(\'' + card.id + '\', 1)" title="Move down">↓</button>';
+  }
+  html += '<button class="btn btn-sm btn-danger" onclick="removePricingCard(\'' + card.id + '\')">Delete</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="editor-section">' +
+        '<label class="editor-label">Price</label>' +
+        '<input type="text" class="editor-input" id="card-price-' + card.id + '" value="' + escHtml(card.price) + '" placeholder="e.g. Starting at $629">' +
+      '</div>' +
+      '<div class="editor-section">' +
+        '<label class="editor-label">Features</label>';
+
+  card.features.forEach(function(f, fi) {
+    html +=
+      '<div class="feature-row">' +
+        '<input type="text" class="editor-input feature-input-' + card.id + '" value="' + escHtml(f) + '" placeholder="Feature description">' +
+        '<button class="btn-remove-feature" onclick="removeFeature(\'' + card.id + '\', ' + fi + ')" title="Remove feature">×</button>' +
+      '</div>';
+  });
+
+  html +=
+        '<button class="btn btn-sm btn-outline" onclick="addFeature(\'' + card.id + '\')" style="margin-top:4px;">+ Add Feature</button>' +
+      '</div>' +
+    '</div>';
+  return html;
+}
+
+function readPricingFromDOM() {
+  if (!config.pricing) return;
+  var titleInput = document.getElementById('pricing-title-input');
+  if (titleInput) config.pricing.title = titleInput.value.trim();
+  config.pricing.cards.forEach(function(card) {
+    var nameEl = document.getElementById('card-name-' + card.id);
+    var priceEl = document.getElementById('card-price-' + card.id);
+    if (nameEl) card.name = nameEl.value.trim();
+    if (priceEl) card.price = priceEl.value.trim();
+    var featureInputs = document.querySelectorAll('.feature-input-' + card.id);
+    card.features = Array.from(featureInputs).map(function(inp) { return inp.value.trim(); }).filter(function(f) { return f; });
+  });
+}
+
+async function savePricingChanges() {
+  readPricingFromDOM();
+  setStatus('pricing', 'saving');
+  var ok = await saveConfig();
+  setStatus('pricing', ok ? 'saved' : 'error');
+  if (ok) toast('Pricing updated!');
+}
+
+function addPricingCard() {
+  readPricingFromDOM();
+  var newCard = {
+    id: 'card-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name: 'New Package',
+    features: ['Feature 1'],
+    price: 'Starting at $0'
+  };
+  config.pricing.cards.push(newCard);
+  renderPricingPanel();
+  // Focus the new card name input
+  var nameInput = document.getElementById('card-name-' + newCard.id);
+  if (nameInput) { nameInput.focus(); nameInput.select(); }
+}
+
+function removePricingCard(cardId) {
+  readPricingFromDOM();
+  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
+  var cardName = card ? card.name : 'this card';
+  confirmAction = function() {
+    config.pricing.cards = config.pricing.cards.filter(function(c) { return c.id !== cardId; });
+    renderPricingPanel();
+  };
+  document.getElementById('confirmTitle').textContent = 'Delete "' + cardName + '"?';
+  document.getElementById('confirmDesc').textContent = 'Remove this pricing card? Remember to click Save Changes.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function movePricingCard(cardId, direction) {
+  readPricingFromDOM();
+  var cards = config.pricing.cards;
+  var idx = cards.findIndex(function(c) { return c.id === cardId; });
+  if (idx < 0) return;
+  var newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= cards.length) return;
+  var temp = cards[idx];
+  cards[idx] = cards[newIdx];
+  cards[newIdx] = temp;
+  renderPricingPanel();
+}
+
+function addFeature(cardId) {
+  readPricingFromDOM();
+  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
+  if (!card) return;
+  card.features.push('');
+  renderPricingPanel();
+  // Focus the newly added feature input
+  var featureInputs = document.querySelectorAll('.feature-input-' + cardId);
+  if (featureInputs.length > 0) featureInputs[featureInputs.length - 1].focus();
+}
+
+function removeFeature(cardId, featureIndex) {
+  readPricingFromDOM();
+  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
+  if (!card) return;
+  card.features.splice(featureIndex, 1);
+  renderPricingPanel();
+}
+
+// ── Contact Editor ─────────────────────────────────────────────────────────────
+function renderContactPanel() {
+  var panel = document.getElementById('panel-contact');
+  if (!panel || !config.contact) return;
+  var contact = config.contact;
+  var photoSrc;
+  if (contact.photoPublicId) {
+    photoSrc = IMG_BASE + 'w_400,c_fill,q_auto,f_auto/' + contact.photoPublicId;
+  } else {
+    photoSrc = '../photos/david-portrait.webp';
+  }
+
+  panel.innerHTML =
+    '<div class="toolbar">' +
+      '<h2>Contact Page</h2>' +
+      '<span class="save-status" id="status-contact"></span>' +
+      '<button class="btn btn-sm btn-success" onclick="saveContactChanges()">Save Changes</button>' +
+    '</div>' +
+    '<div class="editor-columns">' +
+      '<div>' +
+        '<div class="editor-section">' +
+          '<label class="editor-label">Email Address</label>' +
+          '<input type="email" class="editor-input" id="contact-email-input" value="' + escHtml(contact.email) + '">' +
+          '<div class="editor-hint">Displayed as the alternate contact method below the form.</div>' +
+        '</div>' +
+        '<div class="editor-section">' +
+          '<label class="editor-label">Alternate Contact Text</label>' +
+          '<textarea class="editor-textarea" id="contact-alt-input">' + escHtml(contact.altText) + '</textarea>' +
+          '<div class="editor-hint">Text that appears above your email address.</div>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="editor-section">' +
+          '<label class="editor-label">Contact Photo</label>' +
+          '<div class="contact-photo-preview">' +
+            '<img src="' + photoSrc + '" alt="Contact photo" id="contact-photo-preview-img">' +
+          '</div>' +
+          '<button class="btn btn-sm" onclick="uploadContactPhoto()">Upload New Photo</button>' +
+          '<div class="editor-hint" style="margin-top:8px;">Photo shown alongside the contact form on the public site.</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+async function saveContactChanges() {
+  var emailInput = document.getElementById('contact-email-input');
+  var altInput = document.getElementById('contact-alt-input');
+  if (emailInput) config.contact.email = emailInput.value.trim();
+  if (altInput) config.contact.altText = altInput.value.trim();
+  setStatus('contact', 'saving');
+  var ok = await saveConfig();
+  setStatus('contact', ok ? 'saved' : 'error');
+  if (ok) toast('Contact info updated!');
+}
+
+function uploadContactPhoto() {
+  cloudinary.openUploadWidget({
+    cloudName: CLOUD_NAME,
+    uploadPreset: UPLOAD_PRESET,
+    folder: 'admin',
+    multiple: false,
+    maxFiles: 1,
+    sources: ['local', 'camera'],
+    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
+  }, function(error, result) {
+    if (error) { toast('Upload error'); return; }
+    if (result && result.event === 'success') {
+      config.contact.photoPublicId = result.info.public_id;
+      var previewImg = document.getElementById('contact-photo-preview-img');
+      if (previewImg) previewImg.src = IMG_BASE + 'w_400,c_fill,q_auto,f_auto/' + result.info.public_id;
+      toast('Photo uploaded! Click Save Changes to save.');
+    }
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

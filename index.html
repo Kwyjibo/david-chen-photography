@@ -140,7 +140,7 @@
   .pricing-header { text-align: center; margin-bottom: 60px; }
   .pricing-title { font-family: 'Georgia', 'Times New Roman', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--black); margin-bottom: 20px; }
   .pricing-subtitle { font-size: 15px; font-weight: 300; color: #666; max-width: 600px; margin: 0 auto; line-height: 1.7; }
-  .pricing-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 0 auto; }
+  .pricing-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin: 0 auto; }
   .pricing-card { padding: 0 10px; display: flex; flex-direction: column; }
   .pricing-card-divider { border: none; border-top: 1px solid #ccc; margin-bottom: 24px; }
   .pricing-card-name { font-family: 'Georgia', 'Times New Roman', serif; font-size: 25px; font-weight: 700; color: var(--black); margin-bottom: 16px; white-space: nowrap; }
@@ -181,70 +181,9 @@
 
 <div class="section pricing-section" id="pricing">
   <div class="pricing-header">
-    <h2 class="pricing-title">Portrait Packages</h2>
+    <h2 class="pricing-title" id="pricingTitle"></h2>
   </div>
-  <div class="pricing-cards">
-    <div class="pricing-card">
-      <hr class="pricing-card-divider">
-      <h3 class="pricing-card-name">Classic Portrait Session</h3>
-      <hr class="pricing-card-divider2">
-      <ul class="pricing-card-features">
-        <li>Up to 5 people (groups more than 5, additional fee applies)</li>
-        <li>Outdoor location or in your home</li>
-        <li>Session up to 1 hour</li>
-        <li>Private online gallery</li>
-        <li>15 artistically edited full resolution images</li>
-      </ul>
-      <hr class="pricing-card-bottom-divider">
-      <p class="pricing-card-price">Starting at $629</p>
-      <hr class="pricing-card-price-divider">
-    </div>
-    <div class="pricing-card">
-      <hr class="pricing-card-divider">
-      <h3 class="pricing-card-name">Signature Portrait Session</h3>
-      <hr class="pricing-card-divider2">
-      <ul class="pricing-card-features">
-        <li>Up to 5 people (groups more than 5, additional fee applies)</li>
-        <li>Outdoor location or in your home</li>
-        <li>Session up to 1 hour</li>
-        <li>Private online gallery</li>
-        <li>30 artistically edited full resolution images</li>
-      </ul>
-      <hr class="pricing-card-bottom-divider">
-      <p class="pricing-card-price">Starting at $829</p>
-      <hr class="pricing-card-price-divider">
-    </div>
-    <div class="pricing-card">
-      <hr class="pricing-card-divider">
-      <h3 class="pricing-card-name">Luxe Portrait Session</h3>
-      <hr class="pricing-card-divider2">
-      <ul class="pricing-card-features">
-        <li>Up to 6 people (groups more than 6, additional fee applies)</li>
-        <li>Outdoor location or in your home</li>
-        <li>Session up to 1.5 hours</li>
-        <li>Private online gallery</li>
-        <li>50+ artistically edited full resolution images</li>
-      </ul>
-      <hr class="pricing-card-bottom-divider">
-      <p class="pricing-card-price">Starting at $1,129</p>
-      <hr class="pricing-card-price-divider">
-    </div>
-    <div class="pricing-card">
-      <hr class="pricing-card-divider">
-      <h3 class="pricing-card-name">Event Photography</h3>
-      <hr class="pricing-card-divider2">
-      <ul class="pricing-card-features">
-        <li>Birthday and holiday parties or any other non-wedding event</li>
-        <li>Session up to 2 hours</li>
-        <li>$300 up to each additional hour</li>
-        <li>Private online gallery</li>
-        <li>100+ artistically edited full resolution images</li>
-      </ul>
-      <hr class="pricing-card-bottom-divider">
-      <p class="pricing-card-price">Starting at $1,299</p>
-      <hr class="pricing-card-price-divider">
-    </div>
-  </div>
+  <div class="pricing-cards" id="pricingCards"></div>
 </div>
 
 <div class="section contact-section" id="contact">
@@ -265,13 +204,13 @@
         </div>
         <button type="submit" class="contact-submit">Submit</button>
       </form>
-      <div class="contact-alt">
+      <div class="contact-alt" id="contactAlt">
         Please fill out contact form or you can reach me at<br>
         <a href="mailto:David@davidchenphotography.com">David@davidchenphotography.com</a>
       </div>
     </div>
     <div class="contact-photo-side">
-      <img src="photos/david-portrait.webp" alt="David Chen - Photographer">
+      <img src="photos/david-portrait.webp" alt="David Chen - Photographer" id="contactPhoto">
     </div>
   </div>
 </div>
@@ -303,13 +242,33 @@ var firstGalleryId = null;
 
 // ── Config migration ─────────────────────────────────────────────────────────
 function migrateConfig(cfg) {
-  if (cfg.publicGalleries) return cfg;
-  var pub = [];
-  if (cfg.portfolio) pub.push({ id: 'portfolio', name: 'Portfolio', visible: true, photos: cfg.portfolio });
-  if (cfg.people) pub.push({ id: 'people', name: 'People', visible: true, photos: cfg.people });
-  if (cfg.stuff) pub.push({ id: 'stuff', name: 'Stuff', visible: true, photos: cfg.stuff });
-  if (pub.length === 0) pub = [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }];
-  return { publicGalleries: pub, privateGalleries: cfg.privateGalleries || [] };
+  if (!cfg.publicGalleries) {
+    var pub = [];
+    if (cfg.portfolio) pub.push({ id: 'portfolio', name: 'Portfolio', visible: true, photos: cfg.portfolio });
+    if (cfg.people) pub.push({ id: 'people', name: 'People', visible: true, photos: cfg.people });
+    if (cfg.stuff) pub.push({ id: 'stuff', name: 'Stuff', visible: true, photos: cfg.stuff });
+    if (pub.length === 0) pub = [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }];
+    cfg = { publicGalleries: pub, privateGalleries: cfg.privateGalleries || [] };
+  }
+  if (!cfg.pricing) {
+    cfg.pricing = {
+      title: 'Portrait Packages',
+      cards: [
+        { id: 'card-default-1', name: 'Classic Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '15 artistically edited full resolution images'], price: 'Starting at $629' },
+        { id: 'card-default-2', name: 'Signature Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '30 artistically edited full resolution images'], price: 'Starting at $829' },
+        { id: 'card-default-3', name: 'Luxe Portrait Session', features: ['Up to 6 people (groups more than 6, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1.5 hours', 'Private online gallery', '50+ artistically edited full resolution images'], price: 'Starting at $1,129' },
+        { id: 'card-default-4', name: 'Event Photography', features: ['Birthday and holiday parties or any other non-wedding event', 'Session up to 2 hours', '$300 up to each additional hour', 'Private online gallery', '100+ artistically edited full resolution images'], price: 'Starting at $1,299' }
+      ]
+    };
+  }
+  if (!cfg.contact) {
+    cfg.contact = {
+      email: 'David@davidchenphotography.com',
+      altText: 'Please fill out contact form or you can reach me at',
+      photoPublicId: ''
+    };
+  }
+  return cfg;
 }
 
 async function fetchConfig() {
@@ -462,10 +421,60 @@ function closeMobile() {
   document.getElementById('hamburger').classList.remove('open');
 }
 
+// ── Dynamic Pricing ──────────────────────────────────────────────────────────
+function escHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderPricing(config) {
+  var pricing = config.pricing;
+  if (!pricing) return;
+  var titleEl = document.getElementById('pricingTitle');
+  if (titleEl) titleEl.textContent = pricing.title || 'Pricing';
+  var container = document.getElementById('pricingCards');
+  if (!container) return;
+  container.innerHTML = '';
+  (pricing.cards || []).forEach(function(card) {
+    var div = document.createElement('div');
+    div.className = 'pricing-card';
+    var featuresHtml = '';
+    (card.features || []).forEach(function(f) {
+      featuresHtml += '<li>' + escHtml(f) + '</li>';
+    });
+    div.innerHTML =
+      '<hr class="pricing-card-divider">' +
+      '<h3 class="pricing-card-name">' + escHtml(card.name) + '</h3>' +
+      '<hr class="pricing-card-divider2">' +
+      '<ul class="pricing-card-features">' + featuresHtml + '</ul>' +
+      '<hr class="pricing-card-bottom-divider">' +
+      '<p class="pricing-card-price">' + escHtml(card.price) + '</p>' +
+      '<hr class="pricing-card-price-divider">';
+    container.appendChild(div);
+  });
+}
+
+// ── Dynamic Contact ─────────────────────────────────────────────────────────
+function renderContact(config) {
+  var contact = config.contact;
+  if (!contact) return;
+  var altEl = document.getElementById('contactAlt');
+  if (altEl) {
+    altEl.innerHTML = escHtml(contact.altText) + '<br><a href="mailto:' + escHtml(contact.email) + '">' + escHtml(contact.email) + '</a>';
+  }
+  if (contact.photoPublicId) {
+    var photoEl = document.getElementById('contactPhoto');
+    if (photoEl) photoEl.src = IMG_BASE + FULL_OPTS + contact.photoPublicId;
+  }
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 (async function init() {
   var config = await fetchConfig();
   buildGalleries(config);
+  renderPricing(config);
+  renderContact(config);
   // Load first gallery immediately
   if (firstGalleryId) {
     var first = config.publicGalleries.find(function(g) { return g.id === firstGalleryId; });
