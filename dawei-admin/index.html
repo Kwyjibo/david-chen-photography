@@ -397,6 +397,8 @@ function renderTabs() {
 }
 
 function switchTab(id) {
+  // Exit select mode on previous tab if active
+  if (currentTab && selectMode[currentTab]) toggleSelectMode(currentTab);
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
   var tab = document.querySelector('.tab[data-gallery-id="' + id + '"]');
@@ -746,6 +748,8 @@ function openPrivateEditor(id, name) {
 }
 
 function closePrivateEditor() {
+  // Exit select mode if active
+  if (selectMode['private']) toggleSelectMode('private');
   currentPrivateId = null;
   document.getElementById('privateToolbar').style.display = '';
   document.getElementById('privateGalleryList').style.display = '';
