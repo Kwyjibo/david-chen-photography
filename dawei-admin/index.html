@@ -340,20 +340,21 @@ function migrateConfig(cfg) {
     cfg.pricing = {
       title: 'Portrait Packages',
       cards: [
-        { id: 'card-default-1', name: 'Classic Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n15 artistically edited full resolution images', price: 'Starting at $629' },
-        { id: 'card-default-2', name: 'Signature Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n30 artistically edited full resolution images', price: 'Starting at $829' },
-        { id: 'card-default-3', name: 'Luxe Portrait Session', description: 'Up to 6 people (groups more than 6, additional fee applies)\nOutdoor location or in your home\nSession up to 1.5 hours\nPrivate online gallery\n50+ artistically edited full resolution images', price: 'Starting at $1,129' },
-        { id: 'card-default-4', name: 'Event Photography', description: 'Birthday and holiday parties or any other non-wedding event\nSession up to 2 hours\n$300 up to each additional hour\nPrivate online gallery\n100+ artistically edited full resolution images', price: 'Starting at $1,299' }
+        { id: 'card-default-1', name: 'Classic Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n15 artistically edited full resolution images', price: 'Starting at $629', imagePublicId: '' },
+        { id: 'card-default-2', name: 'Signature Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n30 artistically edited full resolution images', price: 'Starting at $829', imagePublicId: '' },
+        { id: 'card-default-3', name: 'Luxe Portrait Session', description: 'Up to 6 people (groups more than 6, additional fee applies)\nOutdoor location or in your home\nSession up to 1.5 hours\nPrivate online gallery\n50+ artistically edited full resolution images', price: 'Starting at $1,129', imagePublicId: '' },
+        { id: 'card-default-4', name: 'Event Photography', description: 'Birthday and holiday parties or any other non-wedding event\nSession up to 2 hours\n$300 up to each additional hour\nPrivate online gallery\n100+ artistically edited full resolution images', price: 'Starting at $1,299', imagePublicId: '' }
       ]
     };
   }
-  // Migrate cards from features array to description string
+  // Migrate pricing cards
   if (cfg.pricing && cfg.pricing.cards) {
     cfg.pricing.cards.forEach(function(card) {
       if (card.features && !card.description) {
         card.description = card.features.join('\n');
         delete card.features;
       }
+      if (card.imagePublicId === undefined) card.imagePublicId = '';
     });
   }
   // Add contact defaults if missing
@@ -1086,7 +1087,17 @@ function buildCardEditorHTML(card, index, total) {
   if (index < total - 1) {
     html += '<button class="btn btn-sm btn-outline" onclick="movePricingCard(\'' + card.id + '\', 1)" title="Move down">↓</button>';
   }
+  var imgSrc = card.imagePublicId
+    ? IMG_BASE + 'w_200,h_260,c_fill,q_auto,f_auto/' + card.imagePublicId
+    : '';
   html += '<button class="btn btn-sm btn-danger" onclick="removePricingCard(\'' + card.id + '\')">Delete</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="editor-section">' +
+        '<label class="editor-label">Card Image</label>' +
+        '<div style="display:flex;align-items:center;gap:12px;">' +
+          (imgSrc ? '<img src="' + imgSrc + '" id="card-img-preview-' + card.id + '" style="width:80px;height:106px;object-fit:cover;border-radius:4px;">' : '<div id="card-img-preview-' + card.id + '" style="width:80px;height:106px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">No image</div>') +
+          '<button class="btn btn-sm" onclick="uploadCardImage(\'' + card.id + '\')">Upload Image</button>' +
         '</div>' +
       '</div>' +
       '<div class="editor-section">' +
@@ -1129,7 +1140,8 @@ function addPricingCard() {
     id: 'card-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: 'New Package',
     description: '',
-    price: 'Starting at $0'
+    price: 'Starting at $0',
+    imagePublicId: ''
   };
   config.pricing.cards.push(newCard);
   renderPricingPanel();
@@ -1162,6 +1174,38 @@ function movePricingCard(cardId, direction) {
   cards[idx] = cards[newIdx];
   cards[newIdx] = temp;
   renderPricingPanel();
+}
+
+function uploadCardImage(cardId) {
+  cloudinary.openUploadWidget({
+    cloudName: CLOUD_NAME,
+    uploadPreset: UPLOAD_PRESET,
+    folder: 'admin',
+    multiple: false,
+    maxFiles: 1,
+    sources: ['local', 'camera'],
+    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
+  }, function(error, result) {
+    if (error) { toast('Upload error'); return; }
+    if (result && result.event === 'success') {
+      var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
+      if (card) card.imagePublicId = result.info.public_id;
+      var preview = document.getElementById('card-img-preview-' + cardId);
+      if (preview) {
+        if (preview.tagName === 'IMG') {
+          preview.src = IMG_BASE + 'w_200,h_260,c_fill,q_auto,f_auto/' + result.info.public_id;
+        } else {
+          var img = document.createElement('img');
+          img.id = 'card-img-preview-' + cardId;
+          img.src = IMG_BASE + 'w_200,h_260,c_fill,q_auto,f_auto/' + result.info.public_id;
+          img.style.cssText = 'width:80px;height:106px;object-fit:cover;border-radius:4px;';
+          preview.parentNode.replaceChild(img, preview);
+        }
+      }
+      toast('Image uploaded! Click Save Changes to save.');
+    }
+  });
 }
 
 // ── Contact Editor ─────────────────────────────────────────────────────────────
