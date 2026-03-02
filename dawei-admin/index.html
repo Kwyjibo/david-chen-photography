@@ -340,12 +340,21 @@ function migrateConfig(cfg) {
     cfg.pricing = {
       title: 'Portrait Packages',
       cards: [
-        { id: 'card-default-1', name: 'Classic Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '15 artistically edited full resolution images'], price: 'Starting at $629' },
-        { id: 'card-default-2', name: 'Signature Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '30 artistically edited full resolution images'], price: 'Starting at $829' },
-        { id: 'card-default-3', name: 'Luxe Portrait Session', features: ['Up to 6 people (groups more than 6, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1.5 hours', 'Private online gallery', '50+ artistically edited full resolution images'], price: 'Starting at $1,129' },
-        { id: 'card-default-4', name: 'Event Photography', features: ['Birthday and holiday parties or any other non-wedding event', 'Session up to 2 hours', '$300 up to each additional hour', 'Private online gallery', '100+ artistically edited full resolution images'], price: 'Starting at $1,299' }
+        { id: 'card-default-1', name: 'Classic Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n15 artistically edited full resolution images', price: 'Starting at $629' },
+        { id: 'card-default-2', name: 'Signature Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n30 artistically edited full resolution images', price: 'Starting at $829' },
+        { id: 'card-default-3', name: 'Luxe Portrait Session', description: 'Up to 6 people (groups more than 6, additional fee applies)\nOutdoor location or in your home\nSession up to 1.5 hours\nPrivate online gallery\n50+ artistically edited full resolution images', price: 'Starting at $1,129' },
+        { id: 'card-default-4', name: 'Event Photography', description: 'Birthday and holiday parties or any other non-wedding event\nSession up to 2 hours\n$300 up to each additional hour\nPrivate online gallery\n100+ artistically edited full resolution images', price: 'Starting at $1,299' }
       ]
     };
+  }
+  // Migrate cards from features array to description string
+  if (cfg.pricing && cfg.pricing.cards) {
+    cfg.pricing.cards.forEach(function(card) {
+      if (card.features && !card.description) {
+        card.description = card.features.join('\n');
+        delete card.features;
+      }
+    });
   }
   // Add contact defaults if missing
   if (!cfg.contact) {
@@ -1085,18 +1094,8 @@ function buildCardEditorHTML(card, index, total) {
         '<input type="text" class="editor-input" id="card-price-' + card.id + '" value="' + escHtml(card.price) + '" placeholder="e.g. Starting at $629">' +
       '</div>' +
       '<div class="editor-section">' +
-        '<label class="editor-label">Features</label>';
-
-  card.features.forEach(function(f, fi) {
-    html +=
-      '<div class="feature-row">' +
-        '<input type="text" class="editor-input feature-input-' + card.id + '" value="' + escHtml(f) + '" placeholder="Feature description">' +
-        '<button class="btn-remove-feature" onclick="removeFeature(\'' + card.id + '\', ' + fi + ')" title="Remove feature">×</button>' +
-      '</div>';
-  });
-
-  html +=
-        '<button class="btn btn-sm btn-outline" onclick="addFeature(\'' + card.id + '\')" style="margin-top:4px;">+ Add Feature</button>' +
+        '<label class="editor-label">Description</label>' +
+        '<textarea class="editor-textarea" id="card-desc-' + card.id + '" rows="6" placeholder="Enter description (one item per line)">' + escHtml(card.description || '') + '</textarea>' +
       '</div>' +
     '</div>';
   return html;
@@ -1109,10 +1108,10 @@ function readPricingFromDOM() {
   config.pricing.cards.forEach(function(card) {
     var nameEl = document.getElementById('card-name-' + card.id);
     var priceEl = document.getElementById('card-price-' + card.id);
+    var descEl = document.getElementById('card-desc-' + card.id);
     if (nameEl) card.name = nameEl.value.trim();
     if (priceEl) card.price = priceEl.value.trim();
-    var featureInputs = document.querySelectorAll('.feature-input-' + card.id);
-    card.features = Array.from(featureInputs).map(function(inp) { return inp.value.trim(); }).filter(function(f) { return f; });
+    if (descEl) card.description = descEl.value;
   });
 }
 
@@ -1129,7 +1128,7 @@ function addPricingCard() {
   var newCard = {
     id: 'card-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: 'New Package',
-    features: ['Feature 1'],
+    description: '',
     price: 'Starting at $0'
   };
   config.pricing.cards.push(newCard);
@@ -1162,25 +1161,6 @@ function movePricingCard(cardId, direction) {
   var temp = cards[idx];
   cards[idx] = cards[newIdx];
   cards[newIdx] = temp;
-  renderPricingPanel();
-}
-
-function addFeature(cardId) {
-  readPricingFromDOM();
-  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
-  if (!card) return;
-  card.features.push('');
-  renderPricingPanel();
-  // Focus the newly added feature input
-  var featureInputs = document.querySelectorAll('.feature-input-' + cardId);
-  if (featureInputs.length > 0) featureInputs[featureInputs.length - 1].focus();
-}
-
-function removeFeature(cardId, featureIndex) {
-  readPricingFromDOM();
-  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
-  if (!card) return;
-  card.features.splice(featureIndex, 1);
   renderPricingPanel();
 }
 

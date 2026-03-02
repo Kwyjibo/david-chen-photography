@@ -140,17 +140,12 @@
   .pricing-header { text-align: center; margin-bottom: 60px; width: 100%; }
   .pricing-title { font-family: 'Georgia', 'Times New Roman', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--black); margin-bottom: 20px; }
   .pricing-subtitle { font-size: 15px; font-weight: 300; color: #666; max-width: 600px; margin: 0 auto; line-height: 1.7; }
-  .pricing-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px 24px; width: 100%; }
-  .pricing-card { padding: 0 8px; display: flex; flex-direction: column; }
-  .pricing-card-divider { border: none; border-top: 1px solid #ccc; margin-bottom: 32px; }
-  .pricing-card-name { font-family: 'Georgia', 'Times New Roman', serif; font-size: 22px; font-weight: 700; color: var(--black); margin-bottom: 24px; }
-  .pricing-card-divider2 { border: none; border-top: 1px solid #ccc; margin-bottom: 36px; }
-  .pricing-card-features { list-style: disc; padding-left: 18px; margin-bottom: 40px; flex-grow: 1; }
-  .pricing-card-features li { font-size: 14px; font-weight: 400; color: #444; line-height: 2.4; margin-bottom: 8px; }
-  .pricing-card-bottom-divider { border: none; border-top: 1px solid #ccc; margin-bottom: 28px; margin-top: auto; }
-  .pricing-card-price { font-family: 'Georgia', 'Times New Roman', serif; font-size: 22.5px; font-weight: 700; color: var(--black); margin-bottom: 16px; }
-  .pricing-card-price-divider { border: none; border-top: 1px solid #ccc; margin-top: 20px; }
-  @media (max-width: 1024px) { .pricing-cards { grid-template-columns: repeat(2, 1fr); gap: 40px 32px; } .pricing-section { padding: 100px 32px 60px; } }
+  .pricing-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; width: 100%; }
+  .pricing-card { padding: 32px 28px; display: flex; flex-direction: column; border: 1px solid #e0e0e0; border-radius: 12px; }
+  .pricing-card-name { font-family: 'Georgia', 'Times New Roman', serif; font-size: 22px; font-weight: 700; color: var(--black); margin-bottom: 20px; }
+  .pricing-card-description { font-size: 14px; font-weight: 400; color: #444; line-height: 2; white-space: pre-line; margin-bottom: 32px; flex-grow: 1; }
+  .pricing-card-price { font-family: 'Georgia', 'Times New Roman', serif; font-size: 22.5px; font-weight: 700; color: var(--black); margin-top: auto; }
+  @media (max-width: 1024px) { .pricing-cards { grid-template-columns: repeat(2, 1fr); gap: 24px; } .pricing-section { padding: 100px 32px 60px; } }
   @media (max-width: 768px) { .pricing-cards { grid-template-columns: 1fr; max-width: 560px; } }
   @media (max-width: 480px) { .pricing-section { padding: 100px 20px 60px; } }
 
@@ -254,12 +249,21 @@ function migrateConfig(cfg) {
     cfg.pricing = {
       title: 'Portrait Packages',
       cards: [
-        { id: 'card-default-1', name: 'Classic Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '15 artistically edited full resolution images'], price: 'Starting at $629' },
-        { id: 'card-default-2', name: 'Signature Portrait Session', features: ['Up to 5 people (groups more than 5, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1 hour', 'Private online gallery', '30 artistically edited full resolution images'], price: 'Starting at $829' },
-        { id: 'card-default-3', name: 'Luxe Portrait Session', features: ['Up to 6 people (groups more than 6, additional fee applies)', 'Outdoor location or in your home', 'Session up to 1.5 hours', 'Private online gallery', '50+ artistically edited full resolution images'], price: 'Starting at $1,129' },
-        { id: 'card-default-4', name: 'Event Photography', features: ['Birthday and holiday parties or any other non-wedding event', 'Session up to 2 hours', '$300 up to each additional hour', 'Private online gallery', '100+ artistically edited full resolution images'], price: 'Starting at $1,299' }
+        { id: 'card-default-1', name: 'Classic Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n15 artistically edited full resolution images', price: 'Starting at $629' },
+        { id: 'card-default-2', name: 'Signature Portrait Session', description: 'Up to 5 people (groups more than 5, additional fee applies)\nOutdoor location or in your home\nSession up to 1 hour\nPrivate online gallery\n30 artistically edited full resolution images', price: 'Starting at $829' },
+        { id: 'card-default-3', name: 'Luxe Portrait Session', description: 'Up to 6 people (groups more than 6, additional fee applies)\nOutdoor location or in your home\nSession up to 1.5 hours\nPrivate online gallery\n50+ artistically edited full resolution images', price: 'Starting at $1,129' },
+        { id: 'card-default-4', name: 'Event Photography', description: 'Birthday and holiday parties or any other non-wedding event\nSession up to 2 hours\n$300 up to each additional hour\nPrivate online gallery\n100+ artistically edited full resolution images', price: 'Starting at $1,299' }
       ]
     };
+  }
+  // Migrate cards from features array to description string
+  if (cfg.pricing && cfg.pricing.cards) {
+    cfg.pricing.cards.forEach(function(card) {
+      if (card.features && !card.description) {
+        card.description = card.features.join('\n');
+        delete card.features;
+      }
+    });
   }
   if (!cfg.contact) {
     cfg.contact = {
@@ -439,18 +443,10 @@ function renderPricing(config) {
   (pricing.cards || []).forEach(function(card) {
     var div = document.createElement('div');
     div.className = 'pricing-card';
-    var featuresHtml = '';
-    (card.features || []).forEach(function(f) {
-      featuresHtml += '<li>' + escHtml(f) + '</li>';
-    });
     div.innerHTML =
-      '<hr class="pricing-card-divider">' +
       '<h3 class="pricing-card-name">' + escHtml(card.name) + '</h3>' +
-      '<hr class="pricing-card-divider2">' +
-      '<ul class="pricing-card-features">' + featuresHtml + '</ul>' +
-      '<hr class="pricing-card-bottom-divider">' +
-      '<p class="pricing-card-price">' + escHtml(card.price) + '</p>' +
-      '<hr class="pricing-card-price-divider">';
+      '<p class="pricing-card-description">' + escHtml(card.description || '') + '</p>' +
+      '<p class="pricing-card-price">' + escHtml(card.price) + '</p>';
     container.appendChild(div);
   });
 }
