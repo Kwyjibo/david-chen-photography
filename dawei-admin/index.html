@@ -142,6 +142,14 @@
   .editor-input:focus { border-color: #999; background: var(--white); }
   .editor-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); background: var(--light); font-family: inherit; font-size: 15px; outline: none; resize: vertical; min-height: 80px; line-height: 1.6; transition: border-color 0.2s, background 0.2s; }
   .editor-textarea:focus { border-color: #999; background: var(--white); }
+  .fmt-toolbar { display: flex; gap: 4px; margin-bottom: 6px; }
+  .fmt-btn { width: 32px; height: 32px; border: 1px solid var(--border); background: var(--white); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.15s, border-color 0.15s; color: var(--black); }
+  .fmt-btn:hover { background: var(--light); border-color: #999; }
+  .fmt-btn-symbol { width: auto; padding: 0 10px; font-size: 13px; font-weight: 500; position: relative; }
+  .symbol-dropdown { display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 8px; z-index: 50; width: 220px; }
+  .symbol-dropdown.open { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .symbol-btn { width: 28px; height: 28px; border: none; background: none; cursor: pointer; font-size: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+  .symbol-btn:hover { background: var(--light); }
   .card-editor { border: 1px solid var(--border); background: var(--white); padding: 20px; margin-bottom: 16px; }
   .card-editor-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
   .card-editor-header .editor-input { flex: 1; font-weight: 600; }
@@ -1106,11 +1114,70 @@ function buildCardEditorHTML(card, index, total) {
       '</div>' +
       '<div class="editor-section">' +
         '<label class="editor-label">Description</label>' +
+        '<div class="fmt-toolbar">' +
+          '<button type="button" class="fmt-btn" onclick="formatCardText(\'' + card.id + '\', \'b\')" title="Bold"><b>B</b></button>' +
+          '<button type="button" class="fmt-btn" onclick="formatCardText(\'' + card.id + '\', \'i\')" title="Italic"><i>I</i></button>' +
+          '<button type="button" class="fmt-btn" onclick="formatCardText(\'' + card.id + '\', \'u\')" title="Underline"><u>U</u></button>' +
+          '<button type="button" class="fmt-btn fmt-btn-symbol" onclick="toggleSymbolDropdown(\'' + card.id + '\', event)" title="Insert symbol">' +
+            'Symbols &#9662;' +
+            '<div class="symbol-dropdown" id="symbol-dd-' + card.id + '"></div>' +
+          '</button>' +
+        '</div>' +
         '<textarea class="editor-textarea" id="card-desc-' + card.id + '" rows="6" placeholder="Enter description (one item per line)">' + escHtml(card.description || '') + '</textarea>' +
       '</div>' +
     '</div>';
   return html;
 }
+
+var SYMBOLS = ['•','–','—','©','®','™','°','·','†','‡','§','¶','★','✓','✗','→','←','↑','↓','♦','♠','♥','♣','∞','…','¼','½','¾'];
+
+function formatCardText(cardId, tag) {
+  var ta = document.getElementById('card-desc-' + cardId);
+  if (!ta) return;
+  var start = ta.selectionStart;
+  var end = ta.selectionEnd;
+  var text = ta.value;
+  var selected = text.substring(start, end);
+  var open = '<' + tag + '>';
+  var close = '</' + tag + '>';
+  ta.value = text.substring(0, start) + open + selected + close + text.substring(end);
+  ta.focus();
+  ta.selectionStart = start + open.length;
+  ta.selectionEnd = end + open.length;
+}
+
+function toggleSymbolDropdown(cardId, e) {
+  e.stopPropagation();
+  var dd = document.getElementById('symbol-dd-' + cardId);
+  if (!dd) return;
+  var isOpen = dd.classList.contains('open');
+  // Close all dropdowns first
+  document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
+  if (!isOpen) {
+    dd.innerHTML = SYMBOLS.map(function(s) {
+      return '<button type="button" class="symbol-btn" onclick="insertSymbol(\'' + cardId + '\', \'' + s + '\', event)" title="' + s + '">' + s + '</button>';
+    }).join('');
+    dd.classList.add('open');
+  }
+}
+
+function insertSymbol(cardId, symbol, e) {
+  e.stopPropagation();
+  var ta = document.getElementById('card-desc-' + cardId);
+  if (!ta) return;
+  var start = ta.selectionStart;
+  var text = ta.value;
+  ta.value = text.substring(0, start) + symbol + text.substring(start);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + symbol.length;
+  // Close dropdown
+  document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
+}
+
+// Close symbol dropdowns when clicking outside
+document.addEventListener('click', function() {
+  document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
+});
 
 function readPricingFromDOM() {
   if (!config.pricing) return;
