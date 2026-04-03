@@ -187,7 +187,8 @@
 <div class="section contact-section" id="contact">
   <div class="contact-layout">
     <div class="contact-form-side">
-      <form class="contact-form" onsubmit="handleSubmit(event)">
+      <form class="contact-form" name="contact" method="POST" data-netlify="true" onsubmit="handleSubmit(event)">
+        <input type="hidden" name="form-name" value="contact">
         <div class="form-group">
           <div class="form-group-label-row"><label for="name">Name</label><span class="required-text">(required)</span></div>
           <input type="text" id="name" name="name" required>
@@ -411,8 +412,16 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close
 // ── Contact form ─────────────────────────────────────────────────────────────
 function handleSubmit(e) {
   e.preventDefault();
-  e.target.reset();
-  document.getElementById('thankYouModal').classList.add('open');
+  var form = e.target;
+  var data = new FormData(form);
+  fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data).toString() })
+    .then(function() {
+      form.reset();
+      document.getElementById('thankYouModal').classList.add('open');
+    })
+    .catch(function() {
+      alert('Something went wrong. Please email David@davidchenphotography.com directly.');
+    });
 }
 function closeModal(e) {
   if (e && e.target !== e.currentTarget) return;
