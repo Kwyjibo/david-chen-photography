@@ -415,12 +415,14 @@ function handleSubmit(e) {
   var form = e.target;
   var data = new FormData(form);
   fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data).toString() })
-    .then(function() {
+    .then(function(response) {
+      if (!response.ok) { throw new Error('Netlify returned ' + response.status); }
       form.reset();
       document.getElementById('thankYouModal').classList.add('open');
     })
-    .catch(function() {
-      alert('Something went wrong. Please email David@davidchenphotography.com directly.');
+    .catch(function(err) {
+      alert('Something went wrong. Please email david@davidchenphotography.com directly.');
+      console.error('Form submission error:', err);
     });
 }
 function closeModal(e) {
