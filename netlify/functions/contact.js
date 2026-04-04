@@ -30,7 +30,7 @@ exports.handler = async (event) => {
   const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
 
   const emailData = JSON.stringify({
-    from: 'David Chen Photography <noreply@davidchenphotography.com>',
+    from: 'David Chen Photography <david@davidchenphotography.com>',
     to: ['David@davidchenphotography.com'],
     reply_to: `${name} <${email}>`,
     subject: `New message from ${name}`,
