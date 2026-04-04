@@ -481,9 +481,9 @@ function renderPricing(config) {
     div.innerHTML =
       imageHtml +
       '<h3 class="pricing-card-name">' + escHtml(card.name) + '</h3>' +
-      '<p class="pricing-card-description">' + sanitizeDesc(card.description || '') + '</p>' +
+      '<p class="pricing-card-price">' + escHtml(card.price) + '</p>' +
       '<hr class="pricing-card-divider">' +
-      '<p class="pricing-card-price">' + escHtml(card.price) + '</p>';
+      '<p class="pricing-card-description">' + sanitizeDesc(card.description || '') + '</p>';
     container.appendChild(div);
   });
 }
