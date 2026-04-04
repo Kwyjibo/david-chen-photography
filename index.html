@@ -187,8 +187,7 @@
 <div class="section contact-section" id="contact">
   <div class="contact-layout">
     <div class="contact-form-side">
-      <form class="contact-form" name="contact" method="POST" data-netlify="true" onsubmit="handleSubmit(event)">
-        <input type="hidden" name="form-name" value="contact">
+      <form class="contact-form" onsubmit="handleSubmit(event)">
         <div class="form-group">
           <div class="form-group-label-row"><label for="name">Name</label><span class="required-text">(required)</span></div>
           <input type="text" id="name" name="name" required>
@@ -413,10 +412,14 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close
 function handleSubmit(e) {
   e.preventDefault();
   var form = e.target;
-  var data = new FormData(form);
-  fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data).toString() })
+  var data = {
+    name: form.querySelector('#name').value,
+    email: form.querySelector('#email').value,
+    message: form.querySelector('#message').value
+  };
+  fetch('/.netlify/functions/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
     .then(function(response) {
-      if (!response.ok) { throw new Error('Netlify returned ' + response.status); }
+      if (!response.ok) { throw new Error('Server returned ' + response.status); }
       form.reset();
       document.getElementById('thankYouModal').classList.add('open');
     })
