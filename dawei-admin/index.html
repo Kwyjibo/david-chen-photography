@@ -370,9 +370,11 @@ function migrateConfig(cfg) {
     cfg.contact = {
       email: 'David@davidchenphotography.com',
       altText: 'Please fill out contact form or you can reach me at',
-      photoPublicId: ''
+      photoPublicId: '',
+      igVisible: true
     };
   }
+  if (cfg.contact.igVisible === undefined) cfg.contact.igVisible = true;
   return cfg;
 }
 
@@ -1305,6 +1307,13 @@ function renderContactPanel() {
           '<textarea class="editor-textarea" id="contact-alt-input">' + escHtml(contact.altText) + '</textarea>' +
           '<div class="editor-hint">Text that appears above your email address.</div>' +
         '</div>' +
+        '<div class="editor-section">' +
+          '<label class="editor-label">Instagram Icon</label>' +
+          '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;">' +
+            '<input type="checkbox" id="contact-ig-visible" ' + (contact.igVisible ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;">' +
+            '<span style="font-size:14px;">Show Instagram icon in navigation</span>' +
+          '</label>' +
+        '</div>' +
       '</div>' +
       '<div>' +
         '<div class="editor-section">' +
@@ -1322,8 +1331,10 @@ function renderContactPanel() {
 async function saveContactChanges() {
   var emailInput = document.getElementById('contact-email-input');
   var altInput = document.getElementById('contact-alt-input');
+  var igVisible = document.getElementById('contact-ig-visible');
   if (emailInput) config.contact.email = emailInput.value.trim();
   if (altInput) config.contact.altText = altInput.value.trim();
+  if (igVisible) config.contact.igVisible = igVisible.checked;
   setStatus('contact', 'saving');
   var ok = await saveConfig();
   setStatus('contact', ok ? 'saved' : 'error');

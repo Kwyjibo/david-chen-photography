@@ -170,7 +170,7 @@
   <ul class="nav-links" id="navLinks">
     <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing')">Pricing</a></li>
     <li><a href="#" data-section="contact" onclick="showSection('contact')">Contact</a></li>
-    <li><a href="https://instagram.com" target="_blank" class="ig-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a></li>
+    <li id="igNavItem"><a href="https://instagram.com/davidchenphotography" target="_blank" class="ig-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a></li>
   </ul>
   <button class="hamburger" id="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></button>
 </nav>
@@ -273,9 +273,11 @@ function migrateConfig(cfg) {
     cfg.contact = {
       email: 'David@davidchenphotography.com',
       altText: 'Please fill out contact form or you can reach me at',
-      photoPublicId: ''
+      photoPublicId: '',
+      igVisible: true
     };
   }
+  if (cfg.contact.igVisible === undefined) cfg.contact.igVisible = true;
   return cfg;
 }
 
@@ -496,6 +498,8 @@ function renderContact(config) {
     var photoEl = document.getElementById('contactPhoto');
     if (photoEl) photoEl.src = IMG_BASE + FULL_OPTS + contact.photoPublicId;
   }
+  var igItem = document.getElementById('igNavItem');
+  if (igItem) igItem.style.display = contact.igVisible ? '' : 'none';
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
