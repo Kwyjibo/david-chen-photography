@@ -1432,12 +1432,12 @@ function closeCopyMoveModal() {
 }
 
 async function executeCopyMove(targetKey) {
-  closeCopyMoveModal();
   if (!copyMoveState) return;
 
   var sourceGallery = copyMoveState.sourceGallery;
   var action = copyMoveState.action;
   var selectedIds = copyMoveState.selectedIds;
+  closeCopyMoveModal();
 
   // Resolve target photos array
   var targetPhotos, targetGallery;
