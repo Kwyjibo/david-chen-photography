@@ -216,6 +216,8 @@
           <button class="btn btn-sm btn-outline" id="sel-start-private" style="display:none;" onclick="moveSelected('private', 'start')">Move to Start</button>
           <button class="btn btn-sm btn-outline" id="sel-end-private" style="display:none;" onclick="moveSelected('private', 'end')">Move to End</button>
           <button class="btn btn-sm btn-outline" id="sel-clear-private" style="display:none;" onclick="deselectAll('private')">Deselect</button>
+          <button class="btn btn-sm btn-blue" id="sel-copy-private" style="display:none;" onclick="openCopyMoveModal('private','copy')">Copy to...</button>
+          <button class="btn btn-sm btn-outline" id="sel-move-private" style="display:none;" onclick="openCopyMoveModal('private','move')">Move to...</button>
           <button class="btn btn-sm btn-outline" id="sel-toggle-private" onclick="toggleSelectMode('private')">Select</button>
           <button class="btn btn-sm" onclick="openUpload('private')">+ Upload Photos</button>
           <button class="btn btn-sm btn-blue" onclick="downloadAll('private')">Download All</button>
@@ -237,6 +239,18 @@
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeGalleryModal()">Cancel</button>
       <button class="btn" id="galleryModalBtn" onclick="submitGalleryModal()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── COPY / MOVE MODAL ───────────────────────────────────────────────────── -->
+<div class="modal-bg" id="copyMoveModal">
+  <div class="modal-card">
+    <h2 id="copyMoveTitle">Copy to Gallery</h2>
+    <p id="copyMoveDesc">Choose a destination gallery:</p>
+    <div id="copyMoveOptions" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:300px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCopyMoveModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -431,6 +445,8 @@ function renderTabs() {
         '<button class="btn btn-sm btn-outline" id="sel-start-' + g.id + '" style="display:none;" onclick="moveSelected(\'' + g.id + '\', \'start\')">Move to Start</button>' +
         '<button class="btn btn-sm btn-outline" id="sel-end-' + g.id + '" style="display:none;" onclick="moveSelected(\'' + g.id + '\', \'end\')">Move to End</button>' +
         '<button class="btn btn-sm btn-outline" id="sel-clear-' + g.id + '" style="display:none;" onclick="deselectAll(\'' + g.id + '\')">Deselect</button>' +
+        '<button class="btn btn-sm btn-blue" id="sel-copy-' + g.id + '" style="display:none;" onclick="openCopyMoveModal(\'' + g.id + '\',\'copy\')">Copy to...</button>' +
+        '<button class="btn btn-sm btn-outline" id="sel-move-' + g.id + '" style="display:none;" onclick="openCopyMoveModal(\'' + g.id + '\',\'move\')">Move to...</button>' +
         '<button class="btn btn-sm btn-outline" id="sel-toggle-' + g.id + '" onclick="toggleSelectMode(\'' + g.id + '\')">Select</button>' +
         '<button class="btn btn-sm" onclick="openUpload(\'' + g.id + '\')">+ Upload</button>' +
         '<button class="btn btn-sm btn-blue" onclick="downloadAll(\'' + g.id + '\')">Download All</button>' +
@@ -614,6 +630,8 @@ function updateSelectionUI(gallery) {
   var startEl = document.getElementById('sel-start-' + gallery);
   var endEl = document.getElementById('sel-end-' + gallery);
   var clearEl = document.getElementById('sel-clear-' + gallery);
+  var copyEl = document.getElementById('sel-copy-' + gallery);
+  var moveEl = document.getElementById('sel-move-' + gallery);
   if (!infoEl) return;
 
   if (count > 0) {
@@ -624,6 +642,8 @@ function updateSelectionUI(gallery) {
     if (startEl) startEl.style.display = '';
     if (endEl) endEl.style.display = '';
     clearEl.style.display = '';
+    if (copyEl) copyEl.style.display = '';
+    if (moveEl) moveEl.style.display = '';
   } else {
     infoEl.style.display = 'none';
     delEl.style.display = 'none';
@@ -631,6 +651,8 @@ function updateSelectionUI(gallery) {
     if (startEl) startEl.style.display = 'none';
     if (endEl) endEl.style.display = 'none';
     clearEl.style.display = 'none';
+    if (copyEl) copyEl.style.display = 'none';
+    if (moveEl) moveEl.style.display = 'none';
   }
 }
 
@@ -1360,6 +1382,117 @@ function uploadContactPhoto() {
       toast('Photo uploaded! Click Save Changes to save.');
     }
   });
+}
+
+// ── Copy / Move between galleries ────────────────────────────────────────────
+var copyMoveState = null;
+
+function openCopyMoveModal(sourceGallery, action) {
+  var selectedIds = getSelectedIds(sourceGallery);
+  if (selectedIds.length === 0) return;
+  copyMoveState = { sourceGallery: sourceGallery, action: action, selectedIds: selectedIds };
+
+  var label = action === 'copy' ? 'Copy' : 'Move';
+  document.getElementById('copyMoveTitle').textContent = label + ' ' + selectedIds.length + ' photo' + (selectedIds.length !== 1 ? 's' : '') + ' to...';
+  document.getElementById('copyMoveDesc').textContent = 'Choose a destination gallery:';
+
+  var optionsEl = document.getElementById('copyMoveOptions');
+  optionsEl.innerHTML = '';
+
+  config.publicGalleries.forEach(function(g) {
+    if (g.id === sourceGallery) return;
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-outline';
+    btn.style.textAlign = 'left';
+    btn.textContent = g.name + ' (' + (g.photos ? g.photos.length : 0) + ' photos)';
+    btn.onclick = function() { executeCopyMove('pub:' + g.id); };
+    optionsEl.appendChild(btn);
+  });
+
+  config.privateGalleries.forEach(function(g) {
+    if (sourceGallery === 'private' && g.id === currentPrivateId) return;
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-outline';
+    btn.style.textAlign = 'left';
+    btn.textContent = g.name + ' — Private (' + (g.photos ? g.photos.length : 0) + ' photos)';
+    btn.onclick = function() { executeCopyMove('priv:' + g.id); };
+    optionsEl.appendChild(btn);
+  });
+
+  if (optionsEl.children.length === 0) {
+    optionsEl.innerHTML = '<p style="color:#888;font-size:14px;">No other galleries available.</p>';
+  }
+
+  document.getElementById('copyMoveModal').classList.add('open');
+}
+
+function closeCopyMoveModal() {
+  document.getElementById('copyMoveModal').classList.remove('open');
+  copyMoveState = null;
+}
+
+async function executeCopyMove(targetKey) {
+  closeCopyMoveModal();
+  if (!copyMoveState) return;
+
+  var sourceGallery = copyMoveState.sourceGallery;
+  var action = copyMoveState.action;
+  var selectedIds = copyMoveState.selectedIds;
+
+  // Resolve target photos array
+  var targetPhotos, targetGallery;
+  if (targetKey.indexOf('pub:') === 0) {
+    var pubId = targetKey.slice(4);
+    targetGallery = config.publicGalleries.find(function(g) { return g.id === pubId; });
+    if (!targetGallery) { toast('Gallery not found.'); return; }
+    targetPhotos = targetGallery.photos;
+  } else {
+    var privId = targetKey.slice(5);
+    targetGallery = config.privateGalleries.find(function(g) { return g.id === privId; });
+    if (!targetGallery) { toast('Gallery not found.'); return; }
+    targetPhotos = targetGallery.photos;
+  }
+
+  // Add to target, skipping duplicates
+  var existingSet = {};
+  targetPhotos.forEach(function(id) { existingSet[id] = true; });
+  var added = 0;
+  selectedIds.forEach(function(id) {
+    if (!existingSet[id]) { targetPhotos.push(id); added++; }
+  });
+
+  // Re-render target grid if currently visible
+  var targetGridId = targetKey.indexOf('pub:') === 0 ? targetKey.slice(4) : 'private';
+  if (targetKey.indexOf('priv:') === 0) {
+    var privId2 = targetKey.slice(5);
+    if (currentPrivateId === privId2) renderGrid('private', targetGallery.photos);
+  } else {
+    renderGrid(targetKey.slice(4), targetGallery.photos);
+  }
+
+  // If move: remove from source
+  if (action === 'move') {
+    var selectedSet = {};
+    selectedIds.forEach(function(id) { selectedSet[id] = true; });
+
+    if (sourceGallery === 'private') {
+      var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+      if (pg) { pg.photos = pg.photos.filter(function(id) { return !selectedSet[id]; }); renderGrid('private', pg.photos); }
+    } else {
+      var pub = config.publicGalleries.find(function(g) { return g.id === sourceGallery; });
+      if (pub) { pub.photos = pub.photos.filter(function(id) { return !selectedSet[id]; }); renderGrid(sourceGallery, pub.photos); }
+    }
+  }
+
+  deselectAll(sourceGallery);
+
+  var skipped = selectedIds.length - added;
+  var msg = (action === 'copy' ? 'Copied ' : 'Moved ') + added + ' photo' + (added !== 1 ? 's' : '') + ' to "' + targetGallery.name + '"';
+  if (skipped > 0) msg += ' (' + skipped + ' duplicate' + (skipped !== 1 ? 's' : '') + ' skipped)';
+  toast(msg + '. Saving...');
+
+  var ok = await saveConfig();
+  toast(ok ? (action === 'copy' ? 'Copy saved!' : 'Move saved!') : 'Save failed. Please try again.');
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
