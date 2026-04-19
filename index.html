@@ -125,8 +125,10 @@
     .nav-links.mobile-open a { font-size: 20px; }
     nav.dark .nav-links.mobile-open { background: rgba(20,20,20,0.97); color: var(--white); }
     .contact-layout { grid-template-columns: 1fr; }
-    .contact-photo-side { order: -1; }
     .contact-photo-side img { max-width: 360px; }
+    .masonry-item::after { display: none; }
+    .masonry-item:hover::after { background: rgba(0,0,0,0); }
+    .masonry-item:hover img { transform: none; }
   }
   @media (max-width: 480px) {
     .masonry { columns: 1; }
@@ -318,7 +320,7 @@ function populateGridFromConfig(gridId, photos) {
     img.loading = 'lazy';
     var fullSrc = buildImageUrl(publicId, FULL_OPTS);
     item.appendChild(img);
-    item.addEventListener('click', function() { openLightbox(fullSrc); });
+    item.addEventListener('click', function() { if (window.innerWidth > 768) openLightbox(fullSrc); });
     grid.appendChild(item);
   });
 }
