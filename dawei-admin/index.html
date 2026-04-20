@@ -163,6 +163,15 @@
   .editor-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
   @media (max-width: 768px) { .editor-columns { grid-template-columns: 1fr; } }
   .editor-hint { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+  /* ── Focal point picker ── */
+  .card-btn-position { background: rgba(41,128,185,0.85); color: white; font-size: 12px; }
+  .card-btn-position:hover { background: var(--blue); }
+  .focal-picker { display: none; position: absolute; bottom: 40px; right: 6px; background: rgba(0,0,0,0.82); border-radius: 6px; padding: 6px; z-index: 20; grid-template-columns: repeat(3, 22px); gap: 4px; }
+  .focal-picker.open { display: grid; }
+  .focal-dot { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.35); border: 2px solid transparent; cursor: pointer; transition: background 0.15s; }
+  .focal-dot:hover { background: rgba(255,255,255,0.75); }
+  .focal-dot.active { background: white; border-color: var(--blue); }
 </style>
 </head>
 <body>
@@ -547,15 +556,45 @@ function renderGrid(gallery, photos) {
   }
 }
 
+var FOCAL_POSITIONS = [
+  ['left top',    'center top',    'right top'],
+  ['left center', 'center center', 'right center'],
+  ['left bottom', 'center bottom', 'right bottom']
+];
+
+function getGalleryPositions(gallery) {
+  if (gallery === 'private') {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    return (pg && pg.positions) ? pg.positions : {};
+  }
+  var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+  return (pub && pub.positions) ? pub.positions : {};
+}
+
+function setGalleryPosition(gallery, publicId, position) {
+  if (gallery === 'private') {
+    var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
+    if (pg) { if (!pg.positions) pg.positions = {}; pg.positions[publicId] = position; }
+  } else {
+    var pub = config.publicGalleries.find(function(g) { return g.id === gallery; });
+    if (pub) { if (!pub.positions) pub.positions = {}; pub.positions[publicId] = position; }
+  }
+}
+
 function makeCard(publicId, gallery) {
   var card = document.createElement('div');
   card.className = 'photo-card' + (selectMode[gallery] ? ' select-mode' : '');
   card.dataset.id = publicId;
 
+  var positions = getGalleryPositions(gallery);
+  var currentPos = positions[publicId] || 'center center';
+
   var img = document.createElement('img');
   img.src = IMG_BASE + THUMB + publicId;
   img.alt = publicId.split('/').pop();
   img.loading = 'lazy';
+  img.style.objectFit = 'cover';
+  img.style.objectPosition = currentPos;
 
   var actions = document.createElement('div');
   actions.className = 'card-actions';
@@ -566,11 +605,44 @@ function makeCard(publicId, gallery) {
   delBtn.title = 'Delete photo';
   delBtn.onclick = function(e) { e.stopPropagation(); askDeleteSingle(publicId, gallery); };
 
+  // Focal point picker
+  var posBtn = document.createElement('button');
+  posBtn.className = 'card-btn card-btn-position';
+  posBtn.textContent = '⊕';
+  posBtn.title = 'Set focal point';
+
+  var picker = document.createElement('div');
+  picker.className = 'focal-picker';
+
+  FOCAL_POSITIONS.forEach(function(row) {
+    row.forEach(function(pos) {
+      var dot = document.createElement('div');
+      dot.className = 'focal-dot' + (pos === currentPos ? ' active' : '');
+      dot.title = pos;
+      dot.onclick = function(e) {
+        e.stopPropagation();
+        setGalleryPosition(gallery, publicId, pos);
+        picker.querySelectorAll('.focal-dot').forEach(function(d) { d.classList.remove('active'); });
+        dot.classList.add('active');
+        img.style.objectPosition = pos;
+        picker.classList.remove('open');
+        saveConfig().then(function(ok) { toast(ok ? 'Focal point saved!' : 'Save failed.'); });
+      };
+      picker.appendChild(dot);
+    });
+  });
+
+  posBtn.onclick = function(e) {
+    e.stopPropagation();
+    // Close any other open pickers
+    document.querySelectorAll('.focal-picker.open').forEach(function(p) { if (p !== picker) p.classList.remove('open'); });
+    picker.classList.toggle('open');
+  };
+
   var hint = document.createElement('div');
   hint.className = 'drag-hint';
   hint.textContent = selectMode[gallery] ? 'click to select' : 'drag to reorder';
 
-  // Click to toggle selection in select mode
   card.addEventListener('click', function(e) {
     if (!selectMode[gallery]) return;
     if (e.target.classList.contains('card-btn')) return;
@@ -578,9 +650,11 @@ function makeCard(publicId, gallery) {
     updateSelectionUI(gallery);
   });
 
+  actions.appendChild(posBtn);
   actions.appendChild(delBtn);
   card.appendChild(img);
   card.appendChild(actions);
+  card.appendChild(picker);
   card.appendChild(hint);
   return card;
 }
@@ -1198,9 +1272,10 @@ function insertSymbol(cardId, symbol, e) {
   document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
 }
 
-// Close symbol dropdowns when clicking outside
+// Close symbol dropdowns and focal pickers when clicking outside
 document.addEventListener('click', function() {
   document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
+  document.querySelectorAll('.focal-picker.open').forEach(function(el) { el.classList.remove('open'); });
 });
 
 function readPricingFromDOM() {
