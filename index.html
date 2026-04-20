@@ -59,8 +59,8 @@
 
   .gallery-section { padding-left: 48px; padding-right: 48px; padding-bottom: 80px; padding-top: 0; }
   .overview-gallery { padding-top: 120px; }
-  .masonry { columns: 4; column-gap: var(--gap); }
-  .masonry-item { break-inside: avoid; margin-bottom: var(--gap); cursor: pointer; overflow: hidden; position: relative; }
+  .masonry { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+  .masonry-item { cursor: pointer; overflow: hidden; position: relative; }
   .masonry-item::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.9s ease 1s; pointer-events: none; }
   .masonry-item:hover::after { background: rgba(0,0,0,0.35); }
   .masonry-item img { width: 100%; height: auto; display: block; transition: transform 0.9s ease 1s; }
@@ -101,7 +101,7 @@
   .contact-alt a:hover { opacity: 0.6; }
 
   .sub-gallery-section { padding: calc(100px + 40px) 48px 80px; }
-  .sub-gallery-section .masonry { columns: 3; }
+  .sub-gallery-section .masonry { grid-template-columns: repeat(3, 1fr); }
 
   .lightbox { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.88); z-index: 500; justify-content: center; align-items: center; cursor: pointer; }
   .lightbox.open { display: flex; }
@@ -109,16 +109,16 @@
   .lightbox-close { position: absolute; top: 24px; right: 32px; background: none; border: none; color: #333; font-size: 32px; cursor: pointer; font-weight: 300; }
 
   @media (max-width: 1024px) {
-    .masonry { columns: 3; }
-    .sub-gallery-section .masonry { columns: 2; }
+    .masonry { grid-template-columns: repeat(3, 1fr); }
+    .sub-gallery-section .masonry { grid-template-columns: repeat(2, 1fr); }
     nav { padding: 0 32px; }
     .gallery-section, .sub-gallery-section { padding-left: 32px; padding-right: 32px; }
     .contact-layout { padding: 100px 32px 60px; gap: 40px; }
     .form-row { grid-template-columns: 1fr; }
   }
   @media (max-width: 768px) {
-    .masonry { columns: 2; }
-    .sub-gallery-section .masonry { columns: 2; }
+    .masonry { grid-template-columns: repeat(2, 1fr); }
+    .sub-gallery-section .masonry { grid-template-columns: repeat(2, 1fr); }
     .nav-links { display: none; }
     .hamburger { display: block; }
     .nav-links.mobile-open { display: flex; flex-direction: column; position: fixed; inset: 0; background: var(--white); color: var(--black); justify-content: center; align-items: center; gap: 36px; z-index: 150; }
@@ -131,8 +131,8 @@
     .masonry-item:hover img { transform: none; }
   }
   @media (max-width: 480px) {
-    .masonry { columns: 1; }
-    .sub-gallery-section .masonry { columns: 1; }
+    .masonry { grid-template-columns: repeat(1, 1fr); }
+    .sub-gallery-section .masonry { grid-template-columns: repeat(1, 1fr); }
     nav { padding: 0 20px; }
     .gallery-section { padding-left: 20px; padding-right: 20px; }
     .sub-gallery-section { padding-left: 20px; padding-right: 20px; }
