@@ -167,11 +167,9 @@
   /* ── Focal point picker ── */
   .card-btn-position { background: rgba(41,128,185,0.85); color: white; font-size: 12px; }
   .card-btn-position:hover { background: var(--blue); }
-  .focal-picker { display: none; position: absolute; bottom: 40px; right: 6px; background: rgba(0,0,0,0.82); border-radius: 6px; padding: 6px; z-index: 20; grid-template-columns: repeat(3, 22px); gap: 4px; }
-  .focal-picker.open { display: grid; }
-  .focal-dot { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.35); border: 2px solid transparent; cursor: pointer; transition: background 0.15s; }
-  .focal-dot:hover { background: rgba(255,255,255,0.75); }
-  .focal-dot.active { background: white; border-color: var(--blue); }
+  .focal-preview-wrap { aspect-ratio: 2/3; overflow: hidden; position: relative; cursor: grab; user-select: none; margin: 0 auto 20px; border: 2px solid var(--border); max-width: 280px; }
+  .focal-preview-wrap.dragging { cursor: grabbing; }
+  .focal-preview-wrap img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; display: block; }
 </style>
 </head>
 <body>
@@ -260,6 +258,25 @@
     <div id="copyMoveOptions" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:300px;overflow-y:auto;"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeCopyMoveModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOCAL POINT MODAL ───────────────────────────────────────────────────── -->
+<div class="modal-bg" id="focalModal">
+  <div class="modal-card">
+    <h2>Adjust Focal Point</h2>
+    <p>Drag the image to reposition it within the crop frame.</p>
+    <div class="focal-preview-wrap" id="focalPreviewWrap"
+         onmousedown="focalMouseDown(event)"
+         onmousemove="focalMouseMove(event)"
+         onmouseup="focalMouseUp()"
+         onmouseleave="focalMouseUp()">
+      <img id="focalPreviewImg" alt="">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeFocalModal()">Cancel</button>
+      <button class="btn btn-success" onclick="saveFocalPoint()">Save</button>
     </div>
   </div>
 </div>
@@ -556,12 +573,6 @@ function renderGrid(gallery, photos) {
   }
 }
 
-var FOCAL_POSITIONS = [
-  ['left top',    'center top',    'right top'],
-  ['left center', 'center center', 'right center'],
-  ['left bottom', 'center bottom', 'right bottom']
-];
-
 function getGalleryPositions(gallery) {
   if (gallery === 'private') {
     var pg = config.privateGalleries.find(function(g) { return g.id === currentPrivateId; });
@@ -586,7 +597,7 @@ function makeCard(publicId, gallery) {
   card.className = 'photo-card' + (selectMode[gallery] ? ' select-mode' : '');
   card.dataset.id = publicId;
 
-  var currentPos = getGalleryPositions(gallery)[publicId] || 'center center';
+  var currentPos = getGalleryPositions(gallery)[publicId] || '50% 50%';
 
   var img = document.createElement('img');
   img.src = IMG_BASE + THUMB + publicId;
@@ -603,38 +614,11 @@ function makeCard(publicId, gallery) {
   delBtn.title = 'Delete photo';
   delBtn.onclick = function(e) { e.stopPropagation(); askDeleteSingle(publicId, gallery); };
 
-  // Focal point picker
   var posBtn = document.createElement('button');
   posBtn.className = 'card-btn card-btn-position';
   posBtn.textContent = '⊕';
-  posBtn.title = 'Set focal point';
-
-  var picker = document.createElement('div');
-  picker.className = 'focal-picker';
-
-  FOCAL_POSITIONS.forEach(function(row) {
-    row.forEach(function(pos) {
-      var dot = document.createElement('div');
-      dot.className = 'focal-dot' + (pos === currentPos ? ' active' : '');
-      dot.title = pos;
-      dot.onclick = function(e) {
-        e.stopPropagation();
-        setGalleryPosition(gallery, publicId, pos);
-        picker.querySelectorAll('.focal-dot').forEach(function(d) { d.classList.remove('active'); });
-        dot.classList.add('active');
-        img.style.objectPosition = pos;
-        picker.classList.remove('open');
-        saveConfig().then(function(ok) { toast(ok ? 'Focal point saved!' : 'Save failed.'); });
-      };
-      picker.appendChild(dot);
-    });
-  });
-
-  posBtn.onclick = function(e) {
-    e.stopPropagation();
-    document.querySelectorAll('.focal-picker.open').forEach(function(p) { if (p !== picker) p.classList.remove('open'); });
-    picker.classList.toggle('open');
-  };
+  posBtn.title = 'Adjust focal point';
+  posBtn.onclick = function(e) { e.stopPropagation(); openFocalModal(publicId, gallery); };
 
   var hint = document.createElement('div');
   hint.className = 'drag-hint';
@@ -651,9 +635,95 @@ function makeCard(publicId, gallery) {
   actions.appendChild(delBtn);
   card.appendChild(img);
   card.appendChild(actions);
-  card.appendChild(picker);
   card.appendChild(hint);
   return card;
+}
+
+// ── Focal point drag modal ────────────────────────────────────────────────────
+var focalState = null;
+
+function openFocalModal(publicId, gallery) {
+  var pos = getGalleryPositions(gallery)[publicId] || '50% 50%';
+  var parts = pos.split(' ');
+  var xPct = parseFloat(parts[0]) || 50;
+  var yPct = parseFloat(parts[1]) || 50;
+
+  focalState = { publicId: publicId, gallery: gallery, xPct: xPct, yPct: yPct, isDragging: false };
+
+  var previewImg = document.getElementById('focalPreviewImg');
+  previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + publicId;
+  previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
+
+  document.getElementById('focalModal').classList.add('open');
+}
+
+function closeFocalModal() {
+  document.getElementById('focalModal').classList.remove('open');
+  focalState = null;
+}
+
+async function saveFocalPoint() {
+  if (!focalState) return;
+  var pos = focalState.xPct.toFixed(2) + '% ' + focalState.yPct.toFixed(2) + '%';
+  setGalleryPosition(focalState.gallery, focalState.publicId, pos);
+
+  // Update the thumbnail in the grid immediately
+  var grid = document.getElementById('grid-' + focalState.gallery);
+  if (grid) {
+    grid.querySelectorAll('.photo-card').forEach(function(card) {
+      if (card.dataset.id === focalState.publicId) {
+        var img = card.querySelector('img');
+        if (img) img.style.objectPosition = pos;
+      }
+    });
+  }
+
+  closeFocalModal();
+  var ok = await saveConfig();
+  toast(ok ? 'Focal point saved!' : 'Save failed.');
+}
+
+function focalMouseDown(e) {
+  if (!focalState) return;
+  e.preventDefault();
+  focalState.isDragging = true;
+  focalState.dragStartX = e.clientX;
+  focalState.dragStartY = e.clientY;
+  focalState.startXPct = focalState.xPct;
+  focalState.startYPct = focalState.yPct;
+  document.getElementById('focalPreviewWrap').classList.add('dragging');
+}
+
+function focalMouseMove(e) {
+  if (!focalState || !focalState.isDragging) return;
+  var wrap = document.getElementById('focalPreviewWrap');
+  var previewImg = document.getElementById('focalPreviewImg');
+
+  var dx = e.clientX - focalState.dragStartX;
+  var dy = e.clientY - focalState.dragStartY;
+
+  var cW = wrap.clientWidth;
+  var cH = wrap.clientHeight;
+  var nW = previewImg.naturalWidth || cW;
+  var nH = previewImg.naturalHeight || cH;
+
+  var scale = Math.max(cW / nW, cH / nH);
+  var overflowX = (nW * scale) - cW;
+  var overflowY = (nH * scale) - cH;
+
+  var dxPct = overflowX > 0 ? -(dx / overflowX) * 100 : 0;
+  var dyPct = overflowY > 0 ? -(dy / overflowY) * 100 : 0;
+
+  focalState.xPct = Math.max(0, Math.min(100, focalState.startXPct + dxPct));
+  focalState.yPct = Math.max(0, Math.min(100, focalState.startYPct + dyPct));
+
+  previewImg.style.objectPosition = focalState.xPct + '% ' + focalState.yPct + '%';
+}
+
+function focalMouseUp() {
+  if (!focalState) return;
+  focalState.isDragging = false;
+  document.getElementById('focalPreviewWrap').classList.remove('dragging');
 }
 
 // ── Select Mode & Selection UI ───────────────────────────────────────────────
@@ -1269,10 +1339,9 @@ function insertSymbol(cardId, symbol, e) {
   document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
 }
 
-// Close symbol dropdowns and focal pickers when clicking outside
+// Close symbol dropdowns when clicking outside
 document.addEventListener('click', function() {
   document.querySelectorAll('.symbol-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
-  document.querySelectorAll('.focal-picker.open').forEach(function(el) { el.classList.remove('open'); });
 });
 
 function readPricingFromDOM() {
