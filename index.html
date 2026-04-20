@@ -60,10 +60,10 @@
   .gallery-section { padding-left: 48px; padding-right: 48px; padding-bottom: 80px; padding-top: 0; }
   .overview-gallery { padding-top: 120px; }
   .masonry { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
-  .masonry-item { cursor: pointer; overflow: hidden; position: relative; }
+  .masonry-item { cursor: pointer; overflow: hidden; position: relative; aspect-ratio: 2/3; }
   .masonry-item::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.9s ease 1s; pointer-events: none; }
   .masonry-item:hover::after { background: rgba(0,0,0,0.35); }
-  .masonry-item img { width: 100%; height: auto; display: block; transition: transform 0.9s ease 1s; }
+  .masonry-item img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; transition: transform 0.9s ease 1s; }
   .masonry-item:hover img { transform: scale(1.105); }
 
   .empty-gallery { padding: 80px 48px; text-align: center; color: #999; font-size: 15px; }
@@ -301,10 +301,11 @@ function buildImageUrl(publicId, opts) {
   return IMG_BASE + opts + publicId;
 }
 
-function populateGridFromConfig(gridId, photos) {
+function populateGridFromConfig(gridId, photos, positions) {
   var grid = document.getElementById(gridId);
   if (!grid) return;
   grid.innerHTML = '';
+  positions = positions || {};
 
   if (!photos || photos.length === 0) {
     grid.innerHTML = '<p class="empty-gallery">No photos yet.</p>';
@@ -318,6 +319,7 @@ function populateGridFromConfig(gridId, photos) {
     img.src = buildImageUrl(publicId, THUMB_OPTS);
     img.alt = 'Photo ' + (i + 1);
     img.loading = 'lazy';
+    img.style.objectPosition = positions[publicId] || 'center';
     var fullSrc = buildImageUrl(publicId, FULL_OPTS);
     item.appendChild(img);
     item.addEventListener('click', function() { if (window.innerWidth > 768) openLightbox(fullSrc); });
@@ -397,7 +399,7 @@ function showSection(name) {
   if (galleryIds.indexOf(name) !== -1 && !loadedGrids[name]) {
     loadedGrids[name] = true;
     var g = galleryConfig.publicGalleries.find(function(pg) { return pg.id === name; });
-    if (g) populateGridFromConfig('grid-' + g.id, g.photos);
+    if (g) populateGridFromConfig('grid-' + g.id, g.photos, g.positions);
   }
 }
 
@@ -516,7 +518,7 @@ function renderContact(config) {
   if (firstGalleryId) {
     var first = config.publicGalleries.find(function(g) { return g.id === firstGalleryId; });
     if (first) {
-      populateGridFromConfig('grid-' + first.id, first.photos);
+      populateGridFromConfig('grid-' + first.id, first.photos, first.positions);
       loadedGrids[firstGalleryId] = true;
     }
   }
