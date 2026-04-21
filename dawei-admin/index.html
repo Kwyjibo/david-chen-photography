@@ -69,9 +69,10 @@
 
   /* ── Photo grid ── */
   .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-  .photo-card { position: relative; background: var(--border); border-radius: 2px; overflow: hidden; cursor: grab; user-select: none; border: 3px solid transparent; transition: border-color 0.15s; }
+  .photo-card { position: relative; background: var(--border); border-radius: 2px; overflow: hidden; cursor: grab; user-select: none; border: 3px solid transparent; transition: border-color 0.15s; display: flex; flex-direction: column; }
   .photo-card:active { cursor: grabbing; }
   .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; pointer-events: none; }
+  .photo-card .photo-filename { font-size: 10px; color: var(--muted, #888); padding: 3px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--surface, #1a1a1a); }
   .photo-card .card-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
   .photo-card:hover .card-actions { opacity: 1; }
   .card-btn { width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
@@ -633,7 +634,13 @@ function makeCard(publicId, gallery) {
 
   actions.appendChild(posBtn);
   actions.appendChild(delBtn);
+  var filename = document.createElement('div');
+  filename.className = 'photo-filename';
+  filename.textContent = publicId.split('/').pop();
+  filename.title = publicId.split('/').pop();
+
   card.appendChild(img);
+  card.appendChild(filename);
   card.appendChild(actions);
   card.appendChild(hint);
   return card;
