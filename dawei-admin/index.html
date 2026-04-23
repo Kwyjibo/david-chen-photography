@@ -404,6 +404,7 @@ function migrateConfig(cfg) {
         delete card.features;
       }
       if (card.imagePublicId === undefined) card.imagePublicId = '';
+      if (card.imagePosition === undefined) card.imagePosition = '50% 50%';
     });
   }
   // Add contact defaults if missing
@@ -649,6 +650,23 @@ function makeCard(publicId, gallery) {
 // ── Focal point drag modal ────────────────────────────────────────────────────
 var focalState = null;
 
+function openPricingFocalModal(cardId) {
+  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
+  if (!card || !card.imagePublicId) return;
+  var pos = card.imagePosition || '50% 50%';
+  var parts = pos.split(' ');
+  var xPct = parseFloat(parts[0]) || 50;
+  var yPct = parseFloat(parts[1]) || 50;
+
+  focalState = { publicId: card.imagePublicId, pricingCardId: cardId, xPct: xPct, yPct: yPct, isDragging: false };
+
+  var previewImg = document.getElementById('focalPreviewImg');
+  previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + card.imagePublicId;
+  previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
+
+  document.getElementById('focalModal').classList.add('open');
+}
+
 function openFocalModal(publicId, gallery) {
   var pos = getGalleryPositions(gallery)[publicId] || '50% 50%';
   var parts = pos.split(' ');
@@ -672,17 +690,23 @@ function closeFocalModal() {
 async function saveFocalPoint() {
   if (!focalState) return;
   var pos = focalState.xPct.toFixed(2) + '% ' + focalState.yPct.toFixed(2) + '%';
-  setGalleryPosition(focalState.gallery, focalState.publicId, pos);
 
-  // Update the thumbnail in the grid immediately
-  var grid = document.getElementById('grid-' + focalState.gallery);
-  if (grid) {
-    grid.querySelectorAll('.photo-card').forEach(function(card) {
-      if (card.dataset.id === focalState.publicId) {
-        var img = card.querySelector('img');
-        if (img) img.style.objectPosition = pos;
-      }
-    });
+  if (focalState.pricingCardId) {
+    var pCard = config.pricing.cards.find(function(c) { return c.id === focalState.pricingCardId; });
+    if (pCard) pCard.imagePosition = pos;
+    var preview = document.getElementById('card-img-preview-' + focalState.pricingCardId);
+    if (preview) preview.style.objectPosition = pos;
+  } else {
+    setGalleryPosition(focalState.gallery, focalState.publicId, pos);
+    var grid = document.getElementById('grid-' + focalState.gallery);
+    if (grid) {
+      grid.querySelectorAll('.photo-card').forEach(function(card) {
+        if (card.dataset.id === focalState.publicId) {
+          var img = card.querySelector('img');
+          if (img) img.style.objectPosition = pos;
+        }
+      });
+    }
   }
 
   closeFocalModal();
@@ -1278,8 +1302,11 @@ function buildCardEditorHTML(card, index, total) {
       '<div class="editor-section">' +
         '<label class="editor-label">Card Image</label>' +
         '<div style="display:flex;align-items:center;gap:12px;">' +
-          (imgSrc ? '<img src="' + imgSrc + '" id="card-img-preview-' + card.id + '" style="width:80px;height:106px;object-fit:cover;border-radius:4px;">' : '<div id="card-img-preview-' + card.id + '" style="width:80px;height:106px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">No image</div>') +
+          (imgSrc ? '<img src="' + imgSrc + '" id="card-img-preview-' + card.id + '" style="width:80px;height:106px;object-fit:cover;border-radius:4px;object-position:' + (card.imagePosition || '50% 50%') + '">' : '<div id="card-img-preview-' + card.id + '" style="width:80px;height:106px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">No image</div>') +
+          '<div style="display:flex;flex-direction:column;gap:8px;">' +
           '<button class="btn btn-sm" onclick="uploadCardImage(\'' + card.id + '\')">Upload Image</button>' +
+          (card.imagePublicId ? '<button class="btn btn-sm btn-outline" onclick="openPricingFocalModal(\'' + card.id + '\')">Adjust Position</button>' : '') +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div class="editor-section">' +

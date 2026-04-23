@@ -480,7 +480,7 @@ function renderPricing(config) {
     var div = document.createElement('div');
     div.className = 'pricing-card';
     var imageHtml = card.imagePublicId
-      ? '<img class="pricing-card-image" src="' + IMG_BASE + 'w_600,h_800,c_fill,q_auto,f_auto/' + card.imagePublicId + '" alt="' + escHtml(card.name) + '">'
+      ? '<img class="pricing-card-image" src="' + IMG_BASE + 'w_600,q_auto,f_auto/' + card.imagePublicId + '" alt="' + escHtml(card.name) + '" style="object-position:' + (card.imagePosition || '50% 50%') + '">'
       : '<div class="pricing-card-image-placeholder"></div>';
     div.innerHTML =
       imageHtml +
