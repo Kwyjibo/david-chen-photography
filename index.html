@@ -318,7 +318,6 @@ function populateGridFromConfig(gridId, photos, positions) {
     var img = document.createElement('img');
     img.src = buildImageUrl(publicId, THUMB_OPTS);
     img.alt = 'Photo ' + (i + 1);
-    img.loading = 'lazy';
     img.style.objectPosition = positions[publicId] || 'center';
     var fullSrc = buildImageUrl(publicId, FULL_OPTS);
     item.appendChild(img);
