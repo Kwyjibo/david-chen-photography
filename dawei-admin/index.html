@@ -170,7 +170,7 @@
   .card-btn-position:hover { background: var(--blue); }
   .focal-preview-wrap { aspect-ratio: 2/3; overflow: hidden; position: relative; cursor: grab; user-select: none; margin: 0 auto 20px; border: 2px solid var(--border); max-width: 280px; }
   .focal-preview-wrap.dragging { cursor: grabbing; }
-  .focal-preview-wrap img { position: absolute; pointer-events: none; display: block; }
+  .focal-preview-wrap img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; display: block; }
 </style>
 </head>
 <body>
@@ -650,23 +650,14 @@ function makeCard(publicId, gallery) {
 // ── Focal point drag modal ────────────────────────────────────────────────────
 var focalState = null;
 
-function _initFocalPreviewImg() {
-  var wrap = document.getElementById('focalPreviewWrap');
-  var img = document.getElementById('focalPreviewImg');
-  if (!focalState || !img.naturalWidth || !img.naturalHeight) return;
-  var cW = wrap.clientWidth;
-  var cH = wrap.clientHeight;
-  var nW = img.naturalWidth;
-  var nH = img.naturalHeight;
-  var scale = Math.max(cW / nW, cH / nH) * 1.3;
-  focalState._imgW = nW * scale;
-  focalState._imgH = nH * scale;
-  focalState._overflowX = focalState._imgW - cW;
-  focalState._overflowY = focalState._imgH - cH;
-  img.style.width  = focalState._imgW + 'px';
-  img.style.height = focalState._imgH + 'px';
-  img.style.left = -(focalState.xPct / 100 * focalState._overflowX) + 'px';
-  img.style.top  = -(focalState.yPct / 100 * focalState._overflowY) + 'px';
+function setPricingCardY(cardId, yVal) {
+  var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
+  if (!card) return;
+  var parts = (card.imagePosition || '50% 50%').split(' ');
+  var xPct = parts[0] || '50%';
+  card.imagePosition = xPct + ' ' + yVal + '%';
+  var preview = document.getElementById('card-img-preview-' + cardId);
+  if (preview) preview.style.objectPosition = card.imagePosition;
 }
 
 function openPricingFocalModal(cardId) {
@@ -679,13 +670,11 @@ function openPricingFocalModal(cardId) {
 
   focalState = { publicId: card.imagePublicId, pricingCardId: cardId, xPct: xPct, yPct: yPct, isDragging: false };
 
-  document.getElementById('focalPreviewWrap').style.aspectRatio = '3/4';
-  document.getElementById('focalModal').classList.add('open');
-
   var previewImg = document.getElementById('focalPreviewImg');
-  previewImg.onload = _initFocalPreviewImg;
   previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + card.imagePublicId;
-  if (previewImg.complete && previewImg.naturalWidth > 0) _initFocalPreviewImg();
+  previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
+
+  document.getElementById('focalModal').classList.add('open');
 }
 
 function openFocalModal(publicId, gallery) {
@@ -696,17 +685,15 @@ function openFocalModal(publicId, gallery) {
 
   focalState = { publicId: publicId, gallery: gallery, xPct: xPct, yPct: yPct, isDragging: false };
 
-  document.getElementById('focalModal').classList.add('open');
-
   var previewImg = document.getElementById('focalPreviewImg');
-  previewImg.onload = _initFocalPreviewImg;
   previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + publicId;
-  if (previewImg.complete && previewImg.naturalWidth > 0) _initFocalPreviewImg();
+  previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
+
+  document.getElementById('focalModal').classList.add('open');
 }
 
 function closeFocalModal() {
   document.getElementById('focalModal').classList.remove('open');
-  document.getElementById('focalPreviewWrap').style.aspectRatio = '';
   focalState = null;
 }
 
@@ -750,11 +737,20 @@ function focalMouseDown(e) {
 
 function focalMouseMove(e) {
   if (!focalState || !focalState.isDragging) return;
+  var wrap = document.getElementById('focalPreviewWrap');
+  var previewImg = document.getElementById('focalPreviewImg');
+
   var dx = e.clientX - focalState.dragStartX;
   var dy = e.clientY - focalState.dragStartY;
 
-  var overflowX = focalState._overflowX || 0;
-  var overflowY = focalState._overflowY || 0;
+  var cW = wrap.clientWidth;
+  var cH = wrap.clientHeight;
+  var nW = previewImg.naturalWidth || cW;
+  var nH = previewImg.naturalHeight || cH;
+
+  var scale = Math.max(cW / nW, cH / nH);
+  var overflowX = (nW * scale) - cW;
+  var overflowY = (nH * scale) - cH;
 
   var dxPct = overflowX > 0 ? -(dx / overflowX) * 100 : 0;
   var dyPct = overflowY > 0 ? -(dy / overflowY) * 100 : 0;
@@ -762,9 +758,7 @@ function focalMouseMove(e) {
   focalState.xPct = Math.max(0, Math.min(100, focalState.startXPct + dxPct));
   focalState.yPct = Math.max(0, Math.min(100, focalState.startYPct + dyPct));
 
-  var img = document.getElementById('focalPreviewImg');
-  img.style.left = -(focalState.xPct / 100 * overflowX) + 'px';
-  img.style.top  = -(focalState.yPct / 100 * overflowY) + 'px';
+  previewImg.style.objectPosition = focalState.xPct + '% ' + focalState.yPct + '%';
 }
 
 function focalMouseUp() {
@@ -917,6 +911,8 @@ function openUpload(gallery) {
     maxFiles:     50,
     sources:      ['local', 'camera'],
     clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    useFilename:     true,
+    uniqueFilename:  false,
     styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
   }, function(error, result) {
     if (error) { toast('Upload error: ' + (error.statusText || error)); return; }
@@ -1315,11 +1311,12 @@ function buildCardEditorHTML(card, index, total) {
       '</div>' +
       '<div class="editor-section">' +
         '<label class="editor-label">Card Image</label>' +
-        '<div style="display:flex;align-items:center;gap:12px;">' +
-          (imgSrc ? '<img src="' + imgSrc + '" id="card-img-preview-' + card.id + '" style="width:80px;height:106px;object-fit:cover;border-radius:4px;object-position:' + (card.imagePosition || '50% 50%') + '">' : '<div id="card-img-preview-' + card.id + '" style="width:80px;height:106px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">No image</div>') +
-          '<div style="display:flex;flex-direction:column;gap:8px;">' +
-          '<button class="btn btn-sm" onclick="uploadCardImage(\'' + card.id + '\')">Upload Image</button>' +
-          (card.imagePublicId ? '<button class="btn btn-sm btn-outline" onclick="openPricingFocalModal(\'' + card.id + '\')">Adjust Position</button>' : '') +
+        '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+          (imgSrc ? '<img src="' + imgSrc + '" id="card-img-preview-' + card.id + '" style="width:80px;height:106px;object-fit:cover;border-radius:4px;flex-shrink:0;object-position:' + (card.imagePosition || '50% 50%') + '">' : '<div id="card-img-preview-' + card.id + '" style="width:80px;height:106px;background:#f0f0f0;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">No image</div>') +
+          '<div style="display:flex;flex-direction:column;gap:8px;flex:1;">' +
+            '<button class="btn btn-sm" onclick="uploadCardImage(\'' + card.id + '\')">Upload Image</button>' +
+            (card.imagePublicId ? '<button class="btn btn-sm btn-outline" onclick="openPricingFocalModal(\'' + card.id + '\')">Adjust Horizontal</button>' : '') +
+            (card.imagePublicId ? '<div><label style="font-size:11px;color:var(--muted,#888);display:block;margin-bottom:4px;">Vertical Position</label><input type="range" min="0" max="100" value="' + (parseFloat((card.imagePosition || '50% 50%').split(' ')[1]) || 50) + '" style="width:100%;" oninput="setPricingCardY(\'' + card.id + '\', this.value)"></div>' : '') +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -1467,6 +1464,8 @@ function uploadCardImage(cardId) {
     maxFiles: 1,
     sources: ['local', 'camera'],
     clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    useFilename: true,
+    uniqueFilename: false,
     styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
   }, function(error, result) {
     if (error) { toast('Upload error'); return; }
@@ -1563,6 +1562,8 @@ function uploadContactPhoto() {
     maxFiles: 1,
     sources: ['local', 'camera'],
     clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    useFilename: true,
+    uniqueFilename: false,
     styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
   }, function(error, result) {
     if (error) { toast('Upload error'); return; }
