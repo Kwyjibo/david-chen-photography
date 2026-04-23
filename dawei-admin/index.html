@@ -660,6 +660,8 @@ function openPricingFocalModal(cardId) {
 
   focalState = { publicId: card.imagePublicId, pricingCardId: cardId, xPct: xPct, yPct: yPct, isDragging: false };
 
+  document.getElementById('focalPreviewWrap').style.aspectRatio = '3/4';
+
   var previewImg = document.getElementById('focalPreviewImg');
   previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + card.imagePublicId;
   previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
@@ -684,6 +686,7 @@ function openFocalModal(publicId, gallery) {
 
 function closeFocalModal() {
   document.getElementById('focalModal').classList.remove('open');
+  document.getElementById('focalPreviewWrap').style.aspectRatio = '';
   focalState = null;
 }
 
