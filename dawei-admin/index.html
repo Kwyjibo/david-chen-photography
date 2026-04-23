@@ -170,7 +170,7 @@
   .card-btn-position:hover { background: var(--blue); }
   .focal-preview-wrap { aspect-ratio: 2/3; overflow: hidden; position: relative; cursor: grab; user-select: none; margin: 0 auto 20px; border: 2px solid var(--border); max-width: 280px; }
   .focal-preview-wrap.dragging { cursor: grabbing; }
-  .focal-preview-wrap img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; display: block; }
+  .focal-preview-wrap img { position: absolute; pointer-events: none; display: block; }
 </style>
 </head>
 <body>
@@ -650,6 +650,25 @@ function makeCard(publicId, gallery) {
 // ── Focal point drag modal ────────────────────────────────────────────────────
 var focalState = null;
 
+function _initFocalPreviewImg() {
+  var wrap = document.getElementById('focalPreviewWrap');
+  var img = document.getElementById('focalPreviewImg');
+  if (!focalState || !img.naturalWidth || !img.naturalHeight) return;
+  var cW = wrap.clientWidth;
+  var cH = wrap.clientHeight;
+  var nW = img.naturalWidth;
+  var nH = img.naturalHeight;
+  var scale = Math.max(cW / nW, cH / nH) * 1.3;
+  focalState._imgW = nW * scale;
+  focalState._imgH = nH * scale;
+  focalState._overflowX = focalState._imgW - cW;
+  focalState._overflowY = focalState._imgH - cH;
+  img.style.width  = focalState._imgW + 'px';
+  img.style.height = focalState._imgH + 'px';
+  img.style.left = -(focalState.xPct / 100 * focalState._overflowX) + 'px';
+  img.style.top  = -(focalState.yPct / 100 * focalState._overflowY) + 'px';
+}
+
 function openPricingFocalModal(cardId) {
   var card = config.pricing.cards.find(function(c) { return c.id === cardId; });
   if (!card || !card.imagePublicId) return;
@@ -661,12 +680,12 @@ function openPricingFocalModal(cardId) {
   focalState = { publicId: card.imagePublicId, pricingCardId: cardId, xPct: xPct, yPct: yPct, isDragging: false };
 
   document.getElementById('focalPreviewWrap').style.aspectRatio = '3/4';
+  document.getElementById('focalModal').classList.add('open');
 
   var previewImg = document.getElementById('focalPreviewImg');
+  previewImg.onload = _initFocalPreviewImg;
   previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + card.imagePublicId;
-  previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
-
-  document.getElementById('focalModal').classList.add('open');
+  if (previewImg.complete && previewImg.naturalWidth > 0) _initFocalPreviewImg();
 }
 
 function openFocalModal(publicId, gallery) {
@@ -677,11 +696,12 @@ function openFocalModal(publicId, gallery) {
 
   focalState = { publicId: publicId, gallery: gallery, xPct: xPct, yPct: yPct, isDragging: false };
 
-  var previewImg = document.getElementById('focalPreviewImg');
-  previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + publicId;
-  previewImg.style.objectPosition = xPct + '% ' + yPct + '%';
-
   document.getElementById('focalModal').classList.add('open');
+
+  var previewImg = document.getElementById('focalPreviewImg');
+  previewImg.onload = _initFocalPreviewImg;
+  previewImg.src = IMG_BASE + 'w_800,q_auto,f_auto/' + publicId;
+  if (previewImg.complete && previewImg.naturalWidth > 0) _initFocalPreviewImg();
 }
 
 function closeFocalModal() {
@@ -730,20 +750,11 @@ function focalMouseDown(e) {
 
 function focalMouseMove(e) {
   if (!focalState || !focalState.isDragging) return;
-  var wrap = document.getElementById('focalPreviewWrap');
-  var previewImg = document.getElementById('focalPreviewImg');
-
   var dx = e.clientX - focalState.dragStartX;
   var dy = e.clientY - focalState.dragStartY;
 
-  var cW = wrap.clientWidth;
-  var cH = wrap.clientHeight;
-  var nW = previewImg.naturalWidth || cW;
-  var nH = previewImg.naturalHeight || cH;
-
-  var scale = Math.max(cW / nW, cH / nH);
-  var overflowX = (nW * scale) - cW;
-  var overflowY = (nH * scale) - cH;
+  var overflowX = focalState._overflowX || 0;
+  var overflowY = focalState._overflowY || 0;
 
   var dxPct = overflowX > 0 ? -(dx / overflowX) * 100 : 0;
   var dyPct = overflowY > 0 ? -(dy / overflowY) * 100 : 0;
@@ -751,7 +762,9 @@ function focalMouseMove(e) {
   focalState.xPct = Math.max(0, Math.min(100, focalState.startXPct + dxPct));
   focalState.yPct = Math.max(0, Math.min(100, focalState.startYPct + dyPct));
 
-  previewImg.style.objectPosition = focalState.xPct + '% ' + focalState.yPct + '%';
+  var img = document.getElementById('focalPreviewImg');
+  img.style.left = -(focalState.xPct / 100 * overflowX) + 'px';
+  img.style.top  = -(focalState.yPct / 100 * overflowY) + 'px';
 }
 
 function focalMouseUp() {
