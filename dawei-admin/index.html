@@ -901,8 +901,6 @@ function openUpload(gallery) {
     maxFiles:     50,
     sources:      ['local', 'camera'],
     clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
-    useFilename:     true,
-    uniqueFilename:  false,
     styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
   }, function(error, result) {
     if (error) { toast('Upload error: ' + (error.statusText || error)); return; }
@@ -1453,8 +1451,6 @@ function uploadCardImage(cardId) {
     maxFiles: 1,
     sources: ['local', 'camera'],
     clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
-    useFilename: true,
-    uniqueFilename: false,
     styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
   }, function(error, result) {
     if (error) { toast('Upload error'); return; }
@@ -1551,8 +1547,6 @@ function uploadContactPhoto() {
     maxFiles: 1,
     sources: ['local', 'camera'],
     clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
-    useFilename: true,
-    uniqueFilename: false,
     styles: { palette: { window: '#FFFFFF', windowBorder: '#1a1a1a', tabIcon: '#1a1a1a', menuIcons: '#1a1a1a', textDark: '#1a1a1a', textLight: '#FFFFFF', link: '#1a1a1a', action: '#1a1a1a', inactiveTabIcon: '#888', error: '#c0392b', inProgress: '#27ae60', complete: '#27ae60', sourceBg: '#f5f5f5' } }
   }, function(error, result) {
     if (error) { toast('Upload error'); return; }
