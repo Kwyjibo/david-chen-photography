@@ -528,7 +528,7 @@ function renderContact(config) {
   }
   var bioEl = document.getElementById('contactBio');
   if (bioEl && contact.bio) {
-    bioEl.textContent = contact.bio;
+    bioEl.innerHTML = escHtml(contact.bio).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     bioEl.style.display = '';
   }
   if (contact.photoPublicId) {

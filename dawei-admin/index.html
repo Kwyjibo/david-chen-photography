@@ -1488,6 +1488,19 @@ function uploadCardImage(cardId) {
 }
 
 // ── Contact Editor ─────────────────────────────────────────────────────────────
+function boldBioSelection() {
+  var ta = document.getElementById('contact-bio-input');
+  if (!ta) return;
+  var start = ta.selectionStart, end = ta.selectionEnd;
+  if (start === end) return;
+  var selected = ta.value.slice(start, end);
+  var replacement = '**' + selected + '**';
+  ta.value = ta.value.slice(0, start) + replacement + ta.value.slice(end);
+  ta.selectionStart = start;
+  ta.selectionEnd = start + replacement.length;
+  ta.focus();
+}
+
 function renderContactPanel() {
   var panel = document.getElementById('panel-contact');
   if (!panel || !config.contact) return;
@@ -1514,8 +1527,9 @@ function renderContactPanel() {
         '</div>' +
         '<div class="editor-section">' +
           '<label class="editor-label">Bio / About</label>' +
+          '<div style="margin-bottom:6px"><button type="button" class="btn btn-sm" onclick="boldBioSelection()" title="Bold selected text"><strong>B</strong></button></div>' +
           '<textarea class="editor-textarea" id="contact-bio-input" rows="5">' + escHtml(contact.bio || '') + '</textarea>' +
-          '<div class="editor-hint">Short paragraph shown above the contact form on your public site. Leave blank to hide.</div>' +
+          '<div class="editor-hint">Short paragraph shown above the contact form on your public site. Use **bold** for emphasis. Leave blank to hide.</div>' +
         '</div>' +
         '<div class="editor-section">' +
           '<label class="editor-label">Alternate Contact Text</label>' +
