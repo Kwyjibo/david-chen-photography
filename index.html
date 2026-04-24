@@ -4,7 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
-<title>David Chen Photography</title>
+<title>David Chen Photography — Westchester, NY</title>
+<meta name="description" content="David Chen is a Westchester County photographer specializing in portraits, family, and children. Serving Bronxville, Scarsdale, and the greater Westchester area.">
+<meta property="og:title" content="David Chen Photography — Westchester, NY">
+<meta property="og:description" content="David Chen is a Westchester County photographer specializing in portraits, family, and children. Serving Bronxville, Scarsdale, and the greater Westchester area.">
+<meta property="og:image" content="https://davidchenphotography.com/og-image.png">
+<meta property="og:url" content="https://davidchenphotography.com">
+<meta property="og:type" content="website">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "David Chen Photography",
+  "description": "Portrait, family, and children photographer serving Westchester County, NY",
+  "url": "https://davidchenphotography.com",
+  "email": "David@davidchenphotography.com",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Bronxville",
+    "addressRegion": "NY",
+    "addressCountry": "US"
+  },
+  "areaServed": ["Bronxville, NY", "Scarsdale, NY", "Westchester County, NY"],
+  "knowsAbout": ["portrait photography", "family photography", "children photography", "event photography"]
+}
+</script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -191,6 +215,7 @@
 <div class="section contact-section" id="contact">
   <div class="contact-layout">
     <div class="contact-form-side">
+      <p id="contactBio" style="color:#555;font-size:15px;line-height:1.75;margin-bottom:32px;display:none;"></p>
       <form class="contact-form" onsubmit="handleSubmit(event)">
         <div class="form-group">
           <div class="form-group-label-row"><label for="name">Name</label><span class="required-text">(required)</span></div>
@@ -498,6 +523,11 @@ function renderContact(config) {
   var altEl = document.getElementById('contactAlt');
   if (altEl) {
     altEl.innerHTML = escHtml(contact.altText) + '<br><a href="mailto:' + escHtml(contact.email) + '">' + escHtml(contact.email) + '</a>';
+  }
+  var bioEl = document.getElementById('contactBio');
+  if (bioEl && contact.bio) {
+    bioEl.textContent = contact.bio;
+    bioEl.style.display = '';
   }
   if (contact.photoPublicId) {
     var photoEl = document.getElementById('contactPhoto');
