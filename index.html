@@ -217,7 +217,7 @@
 <div class="section contact-section" id="contact">
   <div class="contact-layout">
     <div class="contact-form-side">
-      <p id="contactBio" style="color:#555;font-size:15px;line-height:1.75;margin-bottom:32px;display:none;"></p>
+      <p id="contactBio" style="color:#555;font-size:15px;line-height:1.75;margin-bottom:32px;display:none;white-space:pre-wrap;"></p>
       <form class="contact-form" onsubmit="handleSubmit(event)">
         <div class="form-group">
           <div class="form-group-label-row"><label for="name">Name</label><span class="required-text">(required)</span></div>
@@ -528,7 +528,7 @@ function renderContact(config) {
   }
   var bioEl = document.getElementById('contactBio');
   if (bioEl && contact.bio) {
-    bioEl.innerHTML = escHtml(contact.bio).replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    bioEl.innerHTML = escHtml(contact.bio).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     bioEl.style.display = '';
   }
   if (contact.photoPublicId) {
