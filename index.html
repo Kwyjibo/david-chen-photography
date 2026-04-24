@@ -522,14 +522,16 @@ function renderPricing(config) {
 function renderContact(config) {
   var contact = config.contact;
   if (!contact) return;
+  var fontSize = (contact.bioFontSize || '15') + 'px';
   var altEl = document.getElementById('contactAlt');
   if (altEl) {
     altEl.innerHTML = escHtml(contact.altText) + '<br><a href="mailto:' + escHtml(contact.email) + '">' + escHtml(contact.email) + '</a>';
+    altEl.style.fontSize = fontSize;
   }
   var bioEl = document.getElementById('contactBio');
   if (bioEl && contact.bio) {
     bioEl.innerHTML = escHtml(contact.bio).replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
-    bioEl.style.fontSize = (contact.bioFontSize || '15') + 'px';
+    bioEl.style.fontSize = fontSize;
     bioEl.style.display = '';
   }
   if (contact.photoPublicId) {
