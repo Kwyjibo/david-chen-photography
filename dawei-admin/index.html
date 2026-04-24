@@ -412,11 +412,13 @@ function migrateConfig(cfg) {
     cfg.contact = {
       email: 'David@davidchenphotography.com',
       altText: 'Please fill out contact form or you can reach me at',
+      bio: "I'm a Westchester-based photographer specializing in portraits, families, and children. Most of my work is in Bronxville and Scarsdale, but I travel across the county for the right session. If you have questions or want to talk about a shoot, reach out below or email me directly.",
       photoPublicId: '',
       igVisible: true
     };
   }
   if (cfg.contact.igVisible === undefined) cfg.contact.igVisible = true;
+  if (cfg.contact.bio === undefined) cfg.contact.bio = "I'm a Westchester-based photographer specializing in portraits, families, and children. Most of my work is in Bronxville and Scarsdale, but I travel across the county for the right session. If you have questions or want to talk about a shoot, reach out below or email me directly.";
   return cfg;
 }
 
@@ -1511,6 +1513,11 @@ function renderContactPanel() {
           '<div class="editor-hint">Displayed as the alternate contact method below the form.</div>' +
         '</div>' +
         '<div class="editor-section">' +
+          '<label class="editor-label">Bio / About</label>' +
+          '<textarea class="editor-textarea" id="contact-bio-input" rows="5">' + escHtml(contact.bio || '') + '</textarea>' +
+          '<div class="editor-hint">Short paragraph shown above the contact form on your public site. Leave blank to hide.</div>' +
+        '</div>' +
+        '<div class="editor-section">' +
           '<label class="editor-label">Alternate Contact Text</label>' +
           '<textarea class="editor-textarea" id="contact-alt-input">' + escHtml(contact.altText) + '</textarea>' +
           '<div class="editor-hint">Text that appears above your email address.</div>' +
@@ -1539,9 +1546,11 @@ function renderContactPanel() {
 async function saveContactChanges() {
   var emailInput = document.getElementById('contact-email-input');
   var altInput = document.getElementById('contact-alt-input');
+  var bioInput = document.getElementById('contact-bio-input');
   var igVisible = document.getElementById('contact-ig-visible');
   if (emailInput) config.contact.email = emailInput.value.trim();
   if (altInput) config.contact.altText = altInput.value.trim();
+  if (bioInput) config.contact.bio = bioInput.value.trim();
   if (igVisible) config.contact.igVisible = igVisible.checked;
   setStatus('contact', 'saving');
   var ok = await saveConfig();
