@@ -419,6 +419,7 @@ function migrateConfig(cfg) {
   }
   if (cfg.contact.igVisible === undefined) cfg.contact.igVisible = true;
   if (cfg.contact.bio === undefined) cfg.contact.bio = "I'm a Westchester-based photographer specializing in portraits, families, and children. Most of my work is in Bronxville and Scarsdale, but I travel across the county for the right session. If you have questions or want to talk about a shoot, reach out below or email me directly.";
+  if (cfg.contact.bioFontSize === undefined) cfg.contact.bioFontSize = '15';
   return cfg;
 }
 
@@ -1527,7 +1528,13 @@ function renderContactPanel() {
         '</div>' +
         '<div class="editor-section">' +
           '<label class="editor-label">Bio / About</label>' +
-          '<div style="margin-bottom:6px"><button type="button" class="btn btn-sm" onclick="boldBioSelection()" title="Bold selected text"><strong>B</strong></button></div>' +
+          '<div style="margin-bottom:6px;display:flex;align-items:center;gap:10px">' +
+            '<button type="button" class="btn btn-sm" onclick="boldBioSelection()" title="Bold selected text"><strong>B</strong></button>' +
+            '<label style="font-size:13px;color:var(--muted)">Font size:</label>' +
+            '<select class="editor-input" id="contact-bio-fontsize" style="width:90px;padding:4px 8px">' +
+              ['12','13','14','15','16','17','18','20','22','24'].map(function(s){ return '<option value="'+s+'"'+(((contact.bioFontSize||'15')===s)?' selected':'')+'>'+s+'px</option>'; }).join('') +
+            '</select>' +
+          '</div>' +
           '<textarea class="editor-textarea" id="contact-bio-input" rows="5">' + escHtml(contact.bio || '') + '</textarea>' +
           '<div class="editor-hint">Short paragraph shown above the contact form on your public site. Use **bold** for emphasis. Leave blank to hide.</div>' +
         '</div>' +
@@ -1564,7 +1571,9 @@ async function saveContactChanges() {
   var igVisible = document.getElementById('contact-ig-visible');
   if (emailInput) config.contact.email = emailInput.value.trim();
   if (altInput) config.contact.altText = altInput.value.trim();
+  var bioFontSize = document.getElementById('contact-bio-fontsize');
   if (bioInput) config.contact.bio = bioInput.value.trim();
+  if (bioFontSize) config.contact.bioFontSize = bioFontSize.value;
   if (igVisible) config.contact.igVisible = igVisible.checked;
   setStatus('contact', 'saving');
   var ok = await saveConfig();

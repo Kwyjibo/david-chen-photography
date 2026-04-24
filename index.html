@@ -103,7 +103,7 @@
 
   .contact-section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; align-items: center; justify-content: center; background: var(--white); }
   .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; padding: 120px 48px 80px; max-width: 1400px; align-items: start; margin: 0 auto; }
-  .contact-form-side { width: 100%; padding-top: 80px; }
+  .contact-form-side { width: 100%; padding-top: 20px; }
   .contact-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
   .contact-photo-side img { width: 100%; max-width: 480px; height: auto; object-fit: cover; display: block; }
   .contact-form { display: flex; flex-direction: column; gap: 24px; }
@@ -529,6 +529,7 @@ function renderContact(config) {
   var bioEl = document.getElementById('contactBio');
   if (bioEl && contact.bio) {
     bioEl.innerHTML = escHtml(contact.bio).replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
+    bioEl.style.fontSize = (contact.bioFontSize || '15') + 'px';
     bioEl.style.display = '';
   }
   if (contact.photoPublicId) {
