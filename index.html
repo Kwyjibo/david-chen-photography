@@ -346,6 +346,12 @@ function populateGridFromConfig(gridId, photos, positions) {
     img.src = buildImageUrl(publicId, THUMB_OPTS);
     img.alt = 'Photo ' + (i + 1);
     img.style.objectPosition = positions[publicId] || 'center';
+    img.onerror = function() {
+      if (this.dataset.retried) return;
+      this.dataset.retried = '1';
+      var el = this;
+      setTimeout(function() { el.src = buildImageUrl(publicId, THUMB_OPTS) + '?r=' + Date.now(); }, 2000);
+    };
     var fullSrc = buildImageUrl(publicId, FULL_OPTS);
     item.appendChild(img);
     item.addEventListener('click', function() { if (window.innerWidth > 768) openLightbox(fullSrc); });
