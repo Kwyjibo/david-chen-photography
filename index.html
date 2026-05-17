@@ -85,6 +85,15 @@
 
   .gallery-section { padding-left: 48px; padding-right: 48px; padding-bottom: 80px; padding-top: 0; }
   .overview-gallery { padding-top: 120px; }
+  .overview-gallery.with-download-bar { padding-top: 168px; }
+
+  .hidden-gallery-bar { display: none; position: fixed; top: 100px; left: 0; right: 0; height: 48px; background: var(--white); border-bottom: 1px solid #e8e8e8; z-index: 99; align-items: center; justify-content: space-between; padding: 0 48px; }
+  .hidden-gallery-bar.visible { display: flex; }
+  .hidden-gallery-bar-name { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #aaa; }
+  .hidden-gallery-bar-btn { display: inline-flex; align-items: center; gap: 7px; background: none; color: #888; border: none; border-bottom: 1px solid #bbb; cursor: pointer; font-family: var(--font), sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 0; transition: color 0.2s, border-color 0.2s; }
+  .hidden-gallery-bar-btn:hover:not(:disabled) { color: #555; border-bottom-color: #888; }
+  .hidden-gallery-bar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .download-bar-progress { font-size: 11px; color: #aaa; margin-left: 12px; }
   .masonry { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
   .masonry-item { cursor: pointer; overflow: hidden; position: relative; aspect-ratio: 2/3; }
   .masonry-item::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.9s ease 1s; pointer-events: none; }
@@ -205,6 +214,17 @@
   <button class="hamburger" id="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></button>
 </nav>
 
+<div id="hiddenGalleryBar" class="hidden-gallery-bar">
+  <span id="hiddenGalleryName" class="hidden-gallery-bar-name"></span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="downloadBarProgress" class="download-bar-progress"></span>
+    <button id="hiddenGalleryDownloadBtn" class="hidden-gallery-bar-btn" onclick="downloadHiddenGallery()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download All
+    </button>
+  </div>
+</div>
+
 <div id="gallerySections"></div>
 
 <div class="section pricing-section" id="pricing">
@@ -268,7 +288,9 @@ var galleryConfig  = null;
 var loadedGrids    = {};
 var galleryIds     = []; // ordered list of visible gallery IDs
 var allGalleryIds  = []; // all galleries including hidden
+var hiddenGalleryIds = new Set(); // gallery IDs that are hidden
 var firstGalleryId = null;
+var currentHiddenGalleryId = null;
 
 // ── Config migration ─────────────────────────────────────────────────────────
 function migrateConfig(cfg) {
@@ -373,6 +395,7 @@ function buildGalleries(config) {
     var visible = g.visible;
     allGalleryIds.push(g.id);
     if (visible) galleryIds.push(g.id);
+    else hiddenGalleryIds.add(g.id);
 
     // Nav link only for visible galleries
     if (visible) {
@@ -420,6 +443,27 @@ function showSection(name, pushUrl) {
     nav.classList.add('overview-nav');
   } else if (allGalleryIds.indexOf(name) !== -1) {
     nav.classList.add('large-logo');
+  }
+
+  // Show download bar for hidden galleries only
+  var bar = document.getElementById('hiddenGalleryBar');
+  var barName = document.getElementById('hiddenGalleryName');
+  var barProgress = document.getElementById('downloadBarProgress');
+  var barBtn = document.getElementById('hiddenGalleryDownloadBtn');
+  var isHidden = hiddenGalleryIds.has(name);
+  if (isHidden) {
+    var gObj = galleryConfig && galleryConfig.publicGalleries.find(function(pg) { return pg.id === name; });
+    barName.textContent = gObj ? gObj.name : name;
+    barProgress.textContent = '';
+    barBtn.disabled = false;
+    bar.classList.add('visible');
+    currentHiddenGalleryId = name;
+    var grid = document.querySelector('#' + name + ' .overview-gallery');
+    if (grid) grid.classList.add('with-download-bar');
+  } else {
+    bar.classList.remove('visible');
+    currentHiddenGalleryId = null;
+    document.querySelectorAll('.overview-gallery.with-download-bar').forEach(function(el) { el.classList.remove('with-download-bar'); });
   }
 
   closeMobile();
@@ -574,6 +618,49 @@ setTimeout(function() {
   splash.classList.add('fade-out');
   setTimeout(function() { splash.remove(); }, 600);
 }, 2000);
+
+// ── Hidden gallery download ──────────────────────────────────────────────────
+async function downloadHiddenGallery() {
+  if (!currentHiddenGalleryId || !galleryConfig) return;
+  var g = galleryConfig.publicGalleries.find(function(pg) { return pg.id === currentHiddenGalleryId; });
+  if (!g || !g.photos || g.photos.length === 0) return;
+
+  var btn = document.getElementById('hiddenGalleryDownloadBtn');
+  var progress = document.getElementById('downloadBarProgress');
+  btn.disabled = true;
+
+  var zip = new JSZip();
+  var folder = zip.folder(g.name);
+  var total = g.photos.length;
+
+  for (var i = 0; i < total; i++) {
+    progress.textContent = 'Downloading ' + (i + 1) + ' of ' + total + '…';
+    try {
+      var url = IMG_BASE + FULL_OPTS + g.photos[i];
+      var res = await fetch(url);
+      var blob = await res.blob();
+      var ext = blob.type.includes('png') ? '.png' : '.jpg';
+      var filename = (i + 1).toString().padStart(3, '0') + ext;
+      folder.file(filename, blob);
+    } catch(e) { console.warn('Failed to fetch photo', g.photos[i], e); }
+  }
+
+  progress.textContent = 'Creating ZIP…';
+  try {
+    var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 } });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = g.name.replace(/[^a-z0-9_\-]/gi, '_') + '.zip';
+    link.click();
+    setTimeout(function() { URL.revokeObjectURL(link.href); }, 60000);
+    progress.textContent = '✓ Done!';
+    setTimeout(function() { progress.textContent = ''; btn.disabled = false; }, 3000);
+  } catch(e) {
+    progress.textContent = 'Error — please try again.';
+    btn.disabled = false;
+  }
+}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
