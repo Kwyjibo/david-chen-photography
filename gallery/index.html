@@ -42,6 +42,19 @@
   .state-box { text-align: center; padding: 100px 20px; color: #999; }
   .state-box h2 { font-size: 22px; font-weight: 500; margin-bottom: 8px; color: #1a1a1a; }
   .state-box p  { font-size: 15px; line-height: 1.6; }
+
+  .gallery-header-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .gallery-header-text { flex: 1; min-width: 0; }
+
+  .btn-download { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-family: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.2s, opacity 0.2s; flex-shrink: 0; }
+  .btn-download:hover:not(:disabled) { background: #333; }
+  .btn-download:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-download svg { flex-shrink: 0; }
+
+  .download-progress { display: none; margin-top: 10px; font-size: 13px; color: #666; text-align: right; }
+  .download-progress.visible { display: block; }
+  .progress-bar-wrap { height: 3px; background: #e0e0e0; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: #1a1a1a; border-radius: 2px; transition: width 0.2s; width: 0%; }
 </style>
 </head>
 <body>
@@ -63,8 +76,24 @@
 
 <div id="galleryContent" style="display:none;">
   <div class="gallery-header">
-    <h1 class="gallery-title" id="galleryTitle"></h1>
-    <p class="gallery-meta" id="galleryMeta"></p>
+    <div class="gallery-header-row">
+      <div class="gallery-header-text">
+        <h1 class="gallery-title" id="galleryTitle"></h1>
+        <p class="gallery-meta" id="galleryMeta"></p>
+      </div>
+      <div>
+        <button class="btn-download" id="downloadBtn" onclick="downloadAllPhotos()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 1v9M4.5 6.5 8 10l3.5-3.5M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Download All
+        </button>
+        <div class="download-progress" id="downloadProgress">
+          <span id="downloadProgressText">Preparing…</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="downloadProgressBar"></div></div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="masonry-wrap">
     <div class="masonry" id="galleryGrid"></div>
@@ -78,6 +107,7 @@
   <button class="lightbox-next" onclick="event.stopPropagation(); shiftLight(1)">&#8250;</button>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 var CLOUD_NAME = 'duyreeset';
 var CONFIG_URL = 'https://res.cloudinary.com/' + CLOUD_NAME + '/raw/upload/gallery-config.json';
@@ -108,6 +138,8 @@ var lightboxIndex  = 0;
   document.getElementById('galleryMeta').textContent  = (gallery.photos ? gallery.photos.length : 0) + ' photos · David Chen Photography';
 
   var photos = gallery.photos || [];
+  currentGalleryName = gallery.name;
+  currentPhotos      = photos;
   lightboxPhotos = photos.map(function(pid) { return IMG_BASE + FULL_OPTS + pid; });
 
   var grid = document.getElementById('galleryGrid');
@@ -156,6 +188,77 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowLeft')  shiftLight(-1);
   if (e.key === 'ArrowRight') shiftLight(1);
 });
+
+var currentGalleryName = 'gallery';
+var currentPhotos = [];
+
+async function downloadAllPhotos() {
+  if (!currentPhotos.length) return;
+
+  var btn      = document.getElementById('downloadBtn');
+  var progress = document.getElementById('downloadProgress');
+  var progText = document.getElementById('downloadProgressText');
+  var progBar  = document.getElementById('downloadProgressBar');
+
+  btn.disabled = true;
+  progress.classList.add('visible');
+  progBar.style.width = '0%';
+  progText.textContent = 'Starting download…';
+
+  var zip = new JSZip();
+  var folder = zip.folder(currentGalleryName);
+  var total = currentPhotos.length;
+  var done  = 0;
+
+  var DOWNLOAD_OPTS = 'q_auto/';
+
+  for (var i = 0; i < total; i++) {
+    var publicId = currentPhotos[i];
+    var url = IMG_BASE + DOWNLOAD_OPTS + publicId;
+    var ext = 'jpg';
+    var match = publicId.match(/\.([a-z]+)$/i);
+    if (match) ext = match[1].toLowerCase();
+    var filename = (publicId.split('/').pop() || ('photo-' + (i + 1))) + (match ? '' : '.' + ext);
+    if (!filename.match(/\.[a-z]+$/i)) filename += '.jpg';
+
+    try {
+      progText.textContent = 'Downloading ' + (i + 1) + ' of ' + total + '…';
+      var res  = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var blob = await res.blob();
+      folder.file(filename, blob);
+    } catch (err) {
+      console.warn('Could not fetch', url, err);
+    }
+
+    done++;
+    progBar.style.width = Math.round((done / total) * 90) + '%';
+  }
+
+  progText.textContent = 'Creating ZIP file…';
+  progBar.style.width  = '95%';
+
+  try {
+    var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 } });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = currentGalleryName.replace(/[^a-z0-9_\-]/gi, '_') + '.zip';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    progBar.style.width  = '100%';
+    progText.textContent = '✓ Download ready!';
+    setTimeout(function() {
+      progress.classList.remove('visible');
+      progBar.style.width = '0%';
+      btn.disabled = false;
+    }, 3000);
+  } catch (err) {
+    progText.textContent = 'Error creating ZIP. Please try again.';
+    btn.disabled = false;
+  }
+}
 </script>
 </body>
 </html>
