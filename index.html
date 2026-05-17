@@ -267,6 +267,7 @@ var FULL_OPTS   = 'q_auto,f_auto/';
 var galleryConfig  = null;
 var loadedGrids    = {};
 var galleryIds     = []; // ordered list of visible gallery IDs
+var allGalleryIds  = []; // all galleries including hidden
 var firstGalleryId = null;
 
 // ── Config migration ─────────────────────────────────────────────────────────
@@ -366,23 +367,26 @@ function buildGalleries(config) {
   var container = document.getElementById('gallerySections');
   container.innerHTML = '';
   galleryIds = [];
+  allGalleryIds = [];
 
-  var visibleGalleries = (config.publicGalleries || []).filter(function(g) { return g.visible; });
+  (config.publicGalleries || []).forEach(function(g, i) {
+    var visible = g.visible;
+    allGalleryIds.push(g.id);
+    if (visible) galleryIds.push(g.id);
 
-  visibleGalleries.forEach(function(g, i) {
-    galleryIds.push(g.id);
+    // Nav link only for visible galleries
+    if (visible) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = '/' + g.id;
+      a.dataset.section = g.id;
+      a.textContent = g.name;
+      a.onclick = function(e) { e.preventDefault(); showSection(g.id); };
+      li.appendChild(a);
+      navList.insertBefore(li, pricingItem);
+    }
 
-    // Nav link (insert before Pricing)
-    var li = document.createElement('li');
-    var a = document.createElement('a');
-    a.href = '/' + g.id;
-    a.dataset.section = g.id;
-    a.textContent = g.name;
-    a.onclick = function(e) { e.preventDefault(); showSection(g.id); };
-    li.appendChild(a);
-    navList.insertBefore(li, pricingItem);
-
-    // Gallery section
+    // Section exists for all galleries (hidden ones accessible via direct URL)
     var sec = document.createElement('div');
     sec.id = g.id;
     sec.className = 'section';
@@ -414,7 +418,7 @@ function showSection(name, pushUrl) {
   nav.className = 'light';
   if (name === firstGalleryId || name === 'contact' || name === 'pricing') {
     nav.classList.add('overview-nav');
-  } else if (galleryIds.indexOf(name) > 0) {
+  } else if (allGalleryIds.indexOf(name) !== -1) {
     nav.classList.add('large-logo');
   }
 
@@ -422,7 +426,7 @@ function showSection(name, pushUrl) {
   window.scrollTo(0, 0);
 
   // Lazy load gallery photos
-  if (galleryIds.indexOf(name) !== -1 && !loadedGrids[name]) {
+  if (allGalleryIds.indexOf(name) !== -1 && !loadedGrids[name]) {
     loadedGrids[name] = true;
     var g = galleryConfig.publicGalleries.find(function(pg) { return pg.id === name; });
     if (g) populateGridFromConfig('grid-' + g.id, g.photos, g.positions);
