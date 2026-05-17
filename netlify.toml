@@ -19,3 +19,8 @@
   from = "/dawei-admin"
   to = "/dawei-admin/index.html"
   status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
