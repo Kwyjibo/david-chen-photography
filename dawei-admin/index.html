@@ -1166,14 +1166,22 @@ function openCreateGallery(type) {
   }
 }
 
+function nameToSlug(name) {
+  var slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+  return slug || 'gallery-' + Date.now().toString(36);
+}
+
 async function createPublicGallery(name) {
-  var res = await fetch(API_BASE + '?action=create-gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password, type: 'public' }) });
-  var data = await res.json();
-  var gallery = { id: data.id, name: name, visible: true, photos: [] };
+  var slug = nameToSlug(name);
+  var existing = config.publicGalleries.map(function(g) { return g.id; });
+  var id = slug;
+  var n = 2;
+  while (existing.indexOf(id) !== -1) { id = slug + '-' + n++; }
+  var gallery = { id: id, name: name, visible: true, photos: [] };
   config.publicGalleries.push(gallery);
   await saveConfig();
   renderTabs();
-  switchTab(data.id);
+  switchTab(id);
   toast('Gallery "' + name + '" created!');
 }
 
