@@ -319,7 +319,7 @@ async function fetchConfig() {
     if (!res.ok) throw new Error('no config');
     galleryConfig = migrateConfig(await res.json());
   } catch (e) {
-    galleryConfig = { publicGalleries: [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }], privateGalleries: [] };
+    galleryConfig = { publicGalleries: [{ id: 'portfolio', name: 'PortFolio', visible: true, photos: [] }], privateGalleries: [] };
   }
   return galleryConfig;
 }
@@ -388,11 +388,10 @@ function buildGalleries(config) {
     sec.id = g.id;
     if (i === 0) {
       sec.className = 'section active';
-      sec.innerHTML = '<div class="gallery-section overview-gallery"><div class="masonry" id="grid-' + g.id + '"></div></div>';
     } else {
-      sec.className = 'section sub-gallery-section';
-      sec.innerHTML = '<div class="masonry" id="grid-' + g.id + '"></div>';
+      sec.className = 'section';
     }
+    sec.innerHTML = '<div class="gallery-section overview-gallery"><div class="masonry" id="grid-' + g.id + '"></div></div>';
     container.appendChild(sec);
   });
 
