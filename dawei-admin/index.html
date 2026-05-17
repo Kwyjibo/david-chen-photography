@@ -431,6 +431,9 @@ async function loadConfig() {
     config = { publicGalleries: [{ id: 'portfolio', name: 'Portfolio', visible: true, photos: [] }], privateGalleries: [] };
   }
   config = migrateConfig(config);
+  // One-time migration: rename Vish gallery ID to slug
+  var vishGallery = config.publicGalleries.find(function(g) { return g.id === 'pg-mpaf4k84glj0'; });
+  if (vishGallery) { vishGallery.id = 'vish'; await saveConfig(); }
   renderTabs();
   renderPrivateList();
 }
