@@ -195,11 +195,11 @@
 </div>
 
 <nav class="light overview-nav" id="mainNav">
-  <a href="#" class="logo" onclick="showFirstGallery()"><img src="logo.png" alt="David Chen Photography" class="logo-img"></a>
-  <a href="#" class="logo-overview" onclick="showFirstGallery()"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
+  <a href="#" class="logo" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-img"></a>
+  <a href="#" class="logo-overview" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
   <ul class="nav-links" id="navLinks">
-    <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing')">Pricing</a></li>
-    <li><a href="#" data-section="contact" onclick="showSection('contact')">Contact</a></li>
+    <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing'); return false;">Pricing</a></li>
+    <li><a href="#" data-section="contact" onclick="showSection('contact'); return false;">Contact</a></li>
     <li id="igNavItem"><a href="https://instagram.com/davidchenphotography" target="_blank" class="ig-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a></li>
   </ul>
   <button class="hamburger" id="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></button>
