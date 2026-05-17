@@ -82,7 +82,7 @@
         <p class="gallery-meta" id="galleryMeta"></p>
       </div>
       <div>
-        <button class="btn-download" id="downloadBtn" onclick="downloadAllPhotos()">
+        <button class="btn-download" id="downloadBtn" onclick="downloadAllPhotos()" style="display:none;">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8 1v9M4.5 6.5 8 10l3.5-3.5M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -112,7 +112,7 @@
 var CLOUD_NAME = 'duyreeset';
 var CONFIG_URL = 'https://res.cloudinary.com/' + CLOUD_NAME + '/raw/upload/gallery-config.json';
 var IMG_BASE   = 'https://res.cloudinary.com/' + CLOUD_NAME + '/image/upload/';
-var THUMB_OPTS = 'w_900,c_scale,q_auto,f_auto/';
+var THUMB_OPTS = 'v_900,c_scale,q_auto,f_auto/';
 var FULL_OPTS  = 'q_auto,f_auto/';
 
 var lightboxPhotos = [];
@@ -141,6 +141,11 @@ var lightboxIndex  = 0;
   currentGalleryName = gallery.name;
   currentPhotos      = photos;
   lightboxPhotos = photos.map(function(pid) { return IMG_BASE + FULL_OPTS + pid; });
+
+  // Only show the Download All button for private client galleries (id starts with 'g-')
+  if (id.startsWith('g-')) {
+    document.getElementById('downloadBtn').style.display = 'inline-flex';
+  }
 
   var grid = document.getElementById('galleryGrid');
   photos.forEach(function(publicId, i) {
