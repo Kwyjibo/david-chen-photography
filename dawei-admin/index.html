@@ -410,6 +410,13 @@ function migrateConfig(cfg) {
       if (card.imagePosition === undefined) card.imagePosition = '50% 50%';
     });
   }
+  if (!cfg.pricing.cardStyle) {
+    cfg.pricing.cardStyle = {
+      nameStyle: { fontSize: 26, bold: true },
+      priceStyle: { fontSize: 22, bold: true },
+      descriptionStyle: { fontSize: 20, bold: false }
+    };
+  }
   // Add contact defaults if missing
   if (!cfg.contact) {
     cfg.contact = {
@@ -1321,6 +1328,9 @@ function renderPricingPanel() {
   var panel = document.getElementById('panel-pricing');
   if (!panel || !config.pricing) return;
   var pricing = config.pricing;
+  var cs = pricing.cardStyle || { nameStyle: { fontSize: 26, bold: true }, priceStyle: { fontSize: 22, bold: true }, descriptionStyle: { fontSize: 20, bold: false } };
+  var ns = cs.nameStyle || {}; var ps = cs.priceStyle || {}; var ds = cs.descriptionStyle || {};
+  var nBold = ns.bold !== false; var pBold = ps.bold !== false; var dBold = !!ds.bold;
   var html =
     '<div class="toolbar">' +
       '<h2>Pricing Page</h2>' +
@@ -1330,6 +1340,29 @@ function renderPricingPanel() {
     '<div class="editor-section">' +
       '<label class="editor-label">Section Title</label>' +
       '<input type="text" class="editor-input" id="pricing-title-input" value="' + escHtml(pricing.title) + '">' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Card Text Style</label>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:12px;color:#666;width:80px;">Title</span>' +
+          '<input type="number" id="pricing-name-fontsize" class="editor-input" style="width:68px;" min="8" max="60" value="' + (ns.fontSize || 26) + '">' +
+          '<span style="font-size:12px;color:#666;">px</span>' +
+          '<button id="pricing-name-bold-btn" class="btn btn-sm" onclick="togglePricingBold(\'name\')" style="font-weight:bold;min-width:36px;' + (nBold ? 'background:#333;color:#fff;border-color:#333;' : '') + '">B</button>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:12px;color:#666;width:80px;">Price</span>' +
+          '<input type="number" id="pricing-price-fontsize" class="editor-input" style="width:68px;" min="8" max="60" value="' + (ps.fontSize || 22) + '">' +
+          '<span style="font-size:12px;color:#666;">px</span>' +
+          '<button id="pricing-price-bold-btn" class="btn btn-sm" onclick="togglePricingBold(\'price\')" style="font-weight:bold;min-width:36px;' + (pBold ? 'background:#333;color:#fff;border-color:#333;' : '') + '">B</button>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:12px;color:#666;width:80px;">Bullets</span>' +
+          '<input type="number" id="pricing-desc-fontsize" class="editor-input" style="width:68px;" min="8" max="60" value="' + (ds.fontSize || 20) + '">' +
+          '<span style="font-size:12px;color:#666;">px</span>' +
+          '<button id="pricing-desc-bold-btn" class="btn btn-sm" onclick="togglePricingBold(\'desc\')" style="font-weight:bold;min-width:36px;' + (dBold ? 'background:#333;color:#fff;border-color:#333;' : '') + '">B</button>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
     '<div id="pricing-cards-editor">';
 
@@ -1449,6 +1482,11 @@ function readPricingFromDOM() {
   if (!config.pricing) return;
   var titleInput = document.getElementById('pricing-title-input');
   if (titleInput) config.pricing.title = titleInput.value.trim();
+  if (!config.pricing.cardStyle) config.pricing.cardStyle = { nameStyle: {}, priceStyle: {}, descriptionStyle: {} };
+  var cs = config.pricing.cardStyle;
+  var nEl = document.getElementById('pricing-name-fontsize'); if (nEl) cs.nameStyle.fontSize = parseInt(nEl.value, 10) || 26;
+  var pEl = document.getElementById('pricing-price-fontsize'); if (pEl) cs.priceStyle.fontSize = parseInt(pEl.value, 10) || 22;
+  var dEl = document.getElementById('pricing-desc-fontsize'); if (dEl) cs.descriptionStyle.fontSize = parseInt(dEl.value, 10) || 20;
   config.pricing.cards.forEach(function(card) {
     var nameEl = document.getElementById('card-name-' + card.id);
     var priceEl = document.getElementById('card-price-' + card.id);
@@ -1457,6 +1495,20 @@ function readPricingFromDOM() {
     if (priceEl) card.price = priceEl.value.trim();
     if (descEl) card.description = descEl.value;
   });
+}
+
+function togglePricingBold(which) {
+  if (!config.pricing) return;
+  if (!config.pricing.cardStyle) config.pricing.cardStyle = { nameStyle: {}, priceStyle: {}, descriptionStyle: {} };
+  var cs = config.pricing.cardStyle;
+  var styleKey = which === 'name' ? 'nameStyle' : (which === 'price' ? 'priceStyle' : 'descriptionStyle');
+  cs[styleKey].bold = !cs[styleKey].bold;
+  var btn = document.getElementById('pricing-' + which + '-bold-btn');
+  if (btn) {
+    btn.style.background = cs[styleKey].bold ? '#333' : '';
+    btn.style.color = cs[styleKey].bold ? '#fff' : '';
+    btn.style.borderColor = cs[styleKey].bold ? '#333' : '';
+  }
 }
 
 async function savePricingChanges() {

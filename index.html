@@ -609,6 +609,14 @@ function renderPricing(config) {
   var container = document.getElementById('pricingCards');
   if (!container) return;
   container.innerHTML = '';
+  var cs = pricing.cardStyle || {};
+  var ns = cs.nameStyle || {}; var ps = cs.priceStyle || {}; var ds = cs.descriptionStyle || {};
+  function styleAttr(s, defaultBold) {
+    var str = '';
+    if (s.fontSize) str += 'font-size:' + s.fontSize + 'px;';
+    if (s.bold !== undefined) str += 'font-weight:' + (s.bold ? '700' : '400') + ';';
+    return str ? ' style="' + str + '"' : '';
+  }
   (pricing.cards || []).forEach(function(card) {
     var div = document.createElement('div');
     div.className = 'pricing-card';
@@ -617,10 +625,10 @@ function renderPricing(config) {
       : '<div class="pricing-card-image-placeholder"></div>';
     div.innerHTML =
       imageHtml +
-      '<h3 class="pricing-card-name">' + escHtml(card.name) + '</h3>' +
-      '<p class="pricing-card-price">' + escHtml(card.price) + '</p>' +
+      '<h3 class="pricing-card-name"' + styleAttr(ns) + '>' + escHtml(card.name) + '</h3>' +
+      '<p class="pricing-card-price"' + styleAttr(ps) + '>' + escHtml(card.price) + '</p>' +
       '<hr class="pricing-card-divider">' +
-      '<p class="pricing-card-description">' + sanitizeDesc(card.description || '') + '</p>';
+      '<p class="pricing-card-description"' + styleAttr(ds) + '>' + sanitizeDesc(card.description || '') + '</p>';
     container.appendChild(div);
   });
 }
