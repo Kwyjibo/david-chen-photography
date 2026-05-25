@@ -72,7 +72,7 @@
   .hamburger.open span:nth-child(2) { opacity: 0; }
   .hamburger.open span:nth-child(3) { bottom: 50%; transform: translateY(50%) rotate(-45deg); }
 
-  .logo-overview { display: none; align-items: center; }
+  .logo-overview { display: none; flex-direction: column; align-items: flex-start; gap: 4px; }
   .logo-overview-img { height: 65px; width: auto; object-fit: contain; transition: opacity 0.3s; }
   .logo-overview-img:hover { opacity: 0.7; }
   nav.overview-nav .logo { display: none; }
@@ -244,7 +244,7 @@
 
 <nav class="light overview-nav" id="mainNav">
   <a href="#" class="logo" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-img"><span class="nav-subtitle">Westchester, NY Children Photographer</span></a>
-  <a href="#" class="logo-overview" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
+  <a href="#" class="logo-overview" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"><span class="nav-subtitle">Westchester, NY Children Photographer</span></a>
   <ul class="nav-links" id="navLinks">
     <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing'); return false;">Pricing</a></li>
     <li><a href="#" data-section="about" onclick="showSection('about'); return false;">About</a></li>
