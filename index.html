@@ -653,22 +653,25 @@ function renderContact(config) {
 
 // ── Dynamic About ────────────────────────────────────────────────────────────
 function renderAbout(config) {
+  var about = config.about;
+  if (!about) return;
   var bioEl = document.getElementById('aboutBio');
   var gridEl = document.getElementById('testimonialsGrid');
-  if (!config || !config.about) return;
 
-  if (bioEl && config.about.bio) {
-    var paragraphs = config.about.bio.split(/\n\n+/);
+  if (bioEl && about.bio) {
+    var paragraphs = about.bio.split(/\n\n+/)
+      .map(function(p) { return p.trim(); })
+      .filter(function(p) { return p.length > 0; });
     bioEl.innerHTML = paragraphs
-      .map(function(p) { return '<p>' + escHtml(p.trim()) + '</p>'; })
+      .map(function(p) { return '<p>' + escHtml(p) + '</p>'; })
       .join('');
   }
 
-  if (gridEl && config.about.testimonials) {
-    gridEl.innerHTML = config.about.testimonials.map(function(t) {
+  if (gridEl && about.testimonials) {
+    gridEl.innerHTML = about.testimonials.map(function(t) {
       return '<div class="testimonial-card">' +
-        '<p class="testimonial-text">' + escHtml(t.text) + '</p>' +
-        '<p class="testimonial-name">' + escHtml(t.name) + '</p>' +
+        '<p class="testimonial-text">' + escHtml(t.text || '') + '</p>' +
+        '<p class="testimonial-name">' + escHtml(t.name || '') + '</p>' +
       '</div>';
     }).join('');
   }
