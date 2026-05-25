@@ -1700,17 +1700,20 @@ function readAboutFromDOM() {
   if (!config.about) return;
   var bioInput = document.getElementById('about-bio-input');
   if (bioInput) config.about.bio = bioInput.value;
-  var cards = document.querySelectorAll('#about-testimonials-editor .card-editor');
-  config.about.testimonials = Array.from(cards).map(function(card) {
-    var id = card.dataset.testimonialId;
-    var nameEl = document.getElementById('testimonial-name-' + id);
-    var textEl = document.getElementById('testimonial-text-' + id);
-    return {
-      id: id,
-      name: nameEl ? nameEl.value.trim() : '',
-      text: textEl ? textEl.value.trim() : ''
-    };
-  });
+  var container = document.getElementById('about-testimonials-editor');
+  if (container) {
+    var cards = container.querySelectorAll('.card-editor');
+    config.about.testimonials = Array.from(cards).map(function(card) {
+      var id = card.dataset.testimonialId;
+      var nameEl = document.getElementById('testimonial-name-' + id);
+      var textEl = document.getElementById('testimonial-text-' + id);
+      return {
+        id: id,
+        name: nameEl ? nameEl.value.trim() : '',
+        text: textEl ? textEl.value.trim() : ''
+      };
+    });
+  }
 }
 
 async function saveAboutChanges() {
@@ -1732,10 +1735,11 @@ function addTestimonialCard() {
   config.about.testimonials.push(newT);
   renderAboutPanel();
   var nameInput = document.getElementById('testimonial-name-' + newT.id);
-  if (nameInput) nameInput.focus();
+  if (nameInput) { nameInput.focus(); nameInput.select(); }
 }
 
 function removeTestimonialCard(id) {
+  if (!config.about || !config.about.testimonials) return;
   readAboutFromDOM();
   var t = config.about.testimonials.find(function(t) { return t.id === id; });
   var name = t ? (t.name || 'this testimonial') : 'this testimonial';
@@ -1743,12 +1747,13 @@ function removeTestimonialCard(id) {
     config.about.testimonials = config.about.testimonials.filter(function(t) { return t.id !== id; });
     renderAboutPanel();
   };
-  document.getElementById('confirmTitle').textContent = 'Delete testimonial?';
+  document.getElementById('confirmTitle').textContent = 'Delete "' + name + '"?';
   document.getElementById('confirmDesc').textContent = 'Remove "' + name + '" testimonial? Remember to click Save Changes.';
   document.getElementById('confirmModal').classList.add('open');
 }
 
 function moveTestimonialCard(id, direction) {
+  if (!config.about || !config.about.testimonials) return;
   readAboutFromDOM();
   var testimonials = config.about.testimonials;
   var idx = testimonials.findIndex(function(t) { return t.id === id; });
