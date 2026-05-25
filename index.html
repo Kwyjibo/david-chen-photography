@@ -195,6 +195,39 @@
   .splash.fade-out { opacity: 0; pointer-events: none; }
   .splash img { height: 80px; width: auto; opacity: 0; animation: splashFadeIn 1.2s ease forwards; }
   @keyframes splashFadeIn { 0% { opacity: 0; transform: scale(0.85); } 100% { opacity: 1; transform: scale(1.05); } }
+
+  /* ── About Section ── */
+  .about-section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; background: var(--white); }
+  .about-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; padding: 120px 48px 60px; max-width: 1400px; align-items: start; margin: 0 auto; }
+  .about-bio-side { width: 100%; padding-top: 20px; }
+  .about-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
+  .about-photo-side img { width: 100%; max-width: 480px; height: auto; object-fit: cover; display: block; }
+  .about-section-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #aaa; margin-bottom: 24px; }
+  .about-bio { color: #888; font-size: 15px; line-height: 1.75; }
+  .about-bio p { margin-bottom: 20px; }
+  .about-bio p:last-child { margin-bottom: 0; }
+
+  /* ── Testimonials ── */
+  .testimonials-wrap { width: 100%; max-width: 1400px; margin: 0 auto; padding: 40px 48px 80px; }
+  .testimonials-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #aaa; margin-bottom: 40px; border-top: 1px solid #e0e0e0; padding-top: 40px; }
+  .testimonials-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .testimonial-card { border-top: 1px solid #e0e0e0; padding-top: 24px; }
+  .testimonial-text { color: #888; font-size: 15px; line-height: 1.75; margin-bottom: 16px; }
+  .testimonial-name { font-size: 12px; font-weight: 700; color: #aaa; letter-spacing: 2px; text-transform: uppercase; }
+
+  @media (max-width: 1024px) {
+    .about-layout { padding: 100px 32px 60px; gap: 40px; }
+    .testimonials-wrap { padding: 40px 32px 60px; }
+  }
+  @media (max-width: 768px) {
+    .about-layout { grid-template-columns: 1fr; }
+    .about-photo-side img { max-width: 360px; }
+    .testimonials-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .about-layout { padding: 100px 20px 60px; }
+    .testimonials-wrap { padding: 40px 20px 60px; }
+  }
 </style>
 </head>
 <body>
@@ -208,6 +241,7 @@
   <a href="#" class="logo-overview" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
   <ul class="nav-links" id="navLinks">
     <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing'); return false;">Pricing</a></li>
+    <li><a href="#" data-section="about" onclick="showSection('about'); return false;">About</a></li>
     <li><a href="#" data-section="contact" onclick="showSection('contact'); return false;">Contact</a></li>
     <li id="igNavItem"><a href="https://instagram.com/davidchenphotography" target="_blank" class="ig-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a></li>
   </ul>
@@ -232,6 +266,61 @@
     <h2 class="pricing-title" id="pricingTitle"></h2>
   </div>
   <div class="pricing-cards" id="pricingCards"></div>
+</div>
+
+<div class="section about-section" id="about">
+  <div class="about-layout">
+    <div class="about-bio-side">
+      <p class="about-section-label">About Me</p>
+      <div class="about-bio">
+        <p>The best family photos don't look like photo sessions. They look like a real day out where everyone was actually having fun and someone happened to be there with a camera.</p>
+        <p>With 15 years of shooting kids and families across Westchester's parks and trails, knowing these locations as well as I do means planning every shoot around the best light, getting the most out of wherever we are, and being ready for the moment right before someone laughs or a kid forgets there's even a camera. A lot of the families I shoot keep coming back, and there's nothing quite like watching the kids grow up through photos.</p>
+        <p>Backyard sessions are also an option for families who prefer shooting close to home. There's something about a familiar space that makes kids more comfortable, and that comfort shows up in the photos.</p>
+        <p>I don't rush, I don't force poses, and I give kids time to warm up to me before I start shooting. Parents are usually surprised by how relaxed the whole thing feels, and how different the photos look because of it.</p>
+        <p>I typically work with kids 5 and up, and if you've been putting off booking because you're convinced your kids won't cooperate, that's exactly the kind of session I'm used to.</p>
+      </div>
+    </div>
+    <div class="about-photo-side">
+      <img src="photos/david-portrait.webp" alt="David Chen - Photographer" id="aboutPhoto">
+    </div>
+  </div>
+  <div class="testimonials-wrap">
+    <p class="testimonials-label">What Clients Say</p>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p class="testimonial-text">When the gallery hit my inbox I opened it alone at my kitchen table and completely lost it. There was one shot of my daughter laughing with my mom that I will treasure forever. David has this ability to catch the real moments, not the posed stiff ones, and that's what makes his work different. My whole family has been asking for prints and we haven't even had a chance to order them yet.</p>
+        <p class="testimonial-name">Priya S.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">My son is painfully shy around strangers and I fully expected a meltdown within the first five minutes. David got down on his level, cracked a few jokes, and within ten minutes my kid was running up to him like they were best friends. The shots of him actually smiling and being himself are something I've never been able to get before. I don't know how he does it but we are not going back to anyone else.</p>
+        <p class="testimonial-name">Emily D.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">I was nervous about booking a shoot with my two toddlers because they never cooperate for pictures. David was so calm and playful with them the whole time, and somehow he got the most natural, genuine smiles out of both of them. He also kept checking in with me to make sure I was comfortable and having a good time. I will 100% be booking him again next year.</p>
+        <p class="testimonial-name">Ashley R.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">The way David sees light is something else. Our evening shoot had this gorgeous golden glow in so many of the photos and I genuinely don't know how he found the right angles every time. He also took way more shots than I expected, so we had a huge variety to pick from. Our walls are covered in these photos now.</p>
+        <p class="testimonial-name">Megan T.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">David is honestly the most patient photographer I've ever worked with. He never made us feel like we were on a clock and kept suggesting fun new spots around the location we hadn't even thought of. By the end of the session we had so many different looks to choose from. The photos turned out better than I could have imagined.</p>
+        <p class="testimonial-name">Sarah M.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">I had a few specific requests going into our shoot and honestly felt a little awkward asking for them. David was completely unfazed and went out of his way to make every one of them happen, plus added a few ideas of his own that I ended up loving even more. He made the whole experience feel easy and fun instead of stressful. These are the best family photos we have ever taken.</p>
+        <p class="testimonial-name">Mei L.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">Before our shoot David walked me through exactly what to expect, what to wear, how the editing process works and when to expect the final gallery. No surprises, no waiting around wondering what comes next. The pictures came back faster than I expected and every single one was stunning. It felt like he really understood the kind of memories we were trying to capture.</p>
+        <p class="testimonial-name">Lauren K.</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">I've worked with photographers who take weeks to deliver and you're left completely in the dark the whole time. David had our full gallery ready so quickly I actually had to double check it was all there. Every photo was edited and looked polished, not like a rough batch he just threw together. He clearly takes his work seriously and it shows.</p>
+        <p class="testimonial-name">Chris W.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="section contact-section" id="contact">
@@ -439,7 +528,7 @@ function showSection(name, pushUrl) {
   // Nav style: first gallery gets overview-nav, other galleries get large-logo
   var nav = document.getElementById('mainNav');
   nav.className = 'light';
-  if (name === firstGalleryId || name === 'contact' || name === 'pricing') {
+  if (name === firstGalleryId || name === 'contact' || name === 'pricing' || name === 'about') {
     nav.classList.add('overview-nav');
   } else if (allGalleryIds.indexOf(name) !== -1) {
     nav.classList.add('large-logo');
@@ -594,6 +683,8 @@ function renderContact(config) {
   if (contact.photoPublicId) {
     var photoEl = document.getElementById('contactPhoto');
     if (photoEl) photoEl.src = IMG_BASE + FULL_OPTS + contact.photoPublicId;
+    var aboutPhotoEl = document.getElementById('aboutPhoto');
+    if (aboutPhotoEl) aboutPhotoEl.src = IMG_BASE + FULL_OPTS + contact.photoPublicId;
   }
   var igItem = document.getElementById('igNavItem');
   if (igItem) igItem.style.display = contact.igVisible ? '' : 'none';
