@@ -421,8 +421,13 @@ function migrateConfig(cfg) {
     };
   }
   if (cfg.contact.igVisible === undefined) cfg.contact.igVisible = true;
-  if (cfg.contact.bio === undefined) cfg.contact.bio = "I'm a Westchester-based photographer specializing in portraits, families, and children. Most of my work is in Bronxville and Scarsdale, but I travel across the county for the right session. If you have questions or want to talk about a shoot, reach out below or email me directly.";
-  if (cfg.contact.bioFontSize === undefined) cfg.contact.bioFontSize = '15';
+  if (!cfg.contact.faq) {
+    cfg.contact.faq = {
+      items: [],
+      questionStyle: { fontSize: 15, bold: true },
+      answerStyle: { fontSize: 15 }
+    };
+  }
   // Add about defaults if missing
   if (!cfg.about) {
     cfg.about = {
@@ -1550,16 +1555,38 @@ function boldBioSelection() {
   ta.focus();
 }
 
+function buildFaqCardHTML(item, index, total) {
+  var isFirst = index === 0;
+  var isLast = index === total - 1;
+  return '<div class="card-editor" data-faq-id="' + item.id + '" style="margin-bottom:12px;">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+      '<span style="font-size:12px;color:#999;flex:1;">FAQ ' + (index + 1) + '</span>' +
+      '<button class="btn btn-sm" onclick="moveFaqCard(\'' + item.id + '\',-1)" ' + (isFirst ? 'disabled' : '') + ' title="Move up">↑</button>' +
+      '<button class="btn btn-sm" onclick="moveFaqCard(\'' + item.id + '\',1)" ' + (isLast ? 'disabled' : '') + ' title="Move down">↓</button>' +
+      '<button class="btn btn-sm btn-danger" onclick="removeFaqCard(\'' + item.id + '\')" title="Delete">✕</button>' +
+    '</div>' +
+    '<input type="text" class="editor-input" id="faq-question-' + item.id + '" placeholder="Question" style="margin-bottom:8px;" value="' + escHtml(item.question || '') + '">' +
+    '<textarea class="editor-textarea" id="faq-answer-' + item.id + '" rows="3" placeholder="Answer">' + escHtml(item.answer || '') + '</textarea>' +
+  '</div>';
+}
+
 function renderContactPanel() {
   var panel = document.getElementById('panel-contact');
   if (!panel || !config.contact) return;
   var contact = config.contact;
-  var photoSrc;
-  if (contact.photoPublicId) {
-    photoSrc = IMG_BASE + 'w_400,c_fill,q_auto,f_auto/' + contact.photoPublicId;
-  } else {
-    photoSrc = '../photos/david-portrait.webp';
-  }
+  var faq = contact.faq || { items: [], questionStyle: { fontSize: 15, bold: true }, answerStyle: { fontSize: 15 } };
+  var qStyle = faq.questionStyle || { fontSize: 15, bold: true };
+  var aStyle = faq.answerStyle || { fontSize: 15 };
+  var qBoldActive = qStyle.bold !== false;
+  var qBoldBtnStyle = qBoldActive ? 'background:#333;color:#fff;border-color:#333;' : '';
+  var photoSrc = contact.photoPublicId
+    ? IMG_BASE + 'w_400,c_fill,q_auto,f_auto/' + contact.photoPublicId
+    : '../photos/david-portrait.webp';
+
+  var faqCardsHtml = '';
+  (faq.items || []).forEach(function(item, i) {
+    faqCardsHtml += buildFaqCardHTML(item, i, faq.items.length);
+  });
 
   panel.innerHTML =
     '<div class="toolbar">' +
@@ -1567,66 +1594,128 @@ function renderContactPanel() {
       '<span class="save-status" id="status-contact"></span>' +
       '<button class="btn btn-sm btn-success" onclick="saveContactChanges()">Save Changes</button>' +
     '</div>' +
-    '<div class="editor-columns">' +
-      '<div>' +
-        '<div class="editor-section">' +
-          '<label class="editor-label">Email Address</label>' +
-          '<input type="email" class="editor-input" id="contact-email-input" value="' + escHtml(contact.email) + '">' +
-          '<div class="editor-hint">Displayed as the alternate contact method below the form.</div>' +
-        '</div>' +
-        '<div class="editor-section">' +
-          '<label class="editor-label">Bio / About</label>' +
-          '<div style="margin-bottom:6px;display:flex;align-items:center;gap:10px">' +
-            '<button type="button" class="btn btn-sm" onclick="boldBioSelection()" title="Bold selected text"><strong>B</strong></button>' +
-            '<label style="font-size:13px;color:var(--muted)">Font size:</label>' +
-            '<select class="editor-input" id="contact-bio-fontsize" style="width:90px;padding:4px 8px">' +
-              ['12','13','14','15','16','17','18','20','22','24'].map(function(s){ return '<option value="'+s+'"'+(((contact.bioFontSize||'15')===s)?' selected':'')+'>'+s+'px</option>'; }).join('') +
-            '</select>' +
-          '</div>' +
-          '<textarea class="editor-textarea" id="contact-bio-input" rows="5">' + escHtml(contact.bio || '') + '</textarea>' +
-          '<div class="editor-hint">Short paragraph shown above the contact form on your public site. Use **bold** for emphasis. Leave blank to hide.</div>' +
-        '</div>' +
-        '<div class="editor-section">' +
-          '<label class="editor-label">Alternate Contact Text</label>' +
-          '<textarea class="editor-textarea" id="contact-alt-input">' + escHtml(contact.altText) + '</textarea>' +
-          '<div class="editor-hint">Text that appears above your email address.</div>' +
-        '</div>' +
-        '<div class="editor-section">' +
-          '<label class="editor-label">Instagram Icon</label>' +
-          '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;">' +
-            '<input type="checkbox" id="contact-ig-visible" ' + (contact.igVisible ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;">' +
-            '<span style="font-size:14px;">Show Instagram icon in navigation</span>' +
-          '</label>' +
-        '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Email Address</label>' +
+      '<input type="email" class="editor-input" id="contact-email-input" value="' + escHtml(contact.email) + '">' +
+      '<div class="editor-hint">Displayed as the alternate contact method below the form.</div>' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Alternate Contact Text</label>' +
+      '<textarea class="editor-textarea" id="contact-alt-input">' + escHtml(contact.altText) + '</textarea>' +
+      '<div class="editor-hint">Text shown above your email address below the form.</div>' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Instagram Icon</label>' +
+      '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;">' +
+        '<input type="checkbox" id="contact-ig-visible" ' + (contact.igVisible ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;">' +
+        '<span style="font-size:14px;">Show Instagram icon in navigation</span>' +
+      '</label>' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">About / Contact Photo</label>' +
+      '<div class="contact-photo-preview">' +
+        '<img src="' + photoSrc + '" alt="Contact photo" id="contact-photo-preview-img">' +
       '</div>' +
-      '<div>' +
-        '<div class="editor-section">' +
-          '<label class="editor-label">Contact Photo</label>' +
-          '<div class="contact-photo-preview">' +
-            '<img src="' + photoSrc + '" alt="Contact photo" id="contact-photo-preview-img">' +
-          '</div>' +
-          '<button class="btn btn-sm" onclick="uploadContactPhoto()">Upload New Photo</button>' +
-          '<div class="editor-hint" style="margin-top:8px;">Photo shown alongside the contact form on the public site.</div>' +
-        '</div>' +
+      '<button class="btn btn-sm" onclick="uploadContactPhoto()">Upload New Photo</button>' +
+      '<div class="editor-hint" style="margin-top:8px;">Used on the About page.</div>' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">FAQ</label>' +
+      '<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">' +
+        '<span style="font-size:12px;color:#666;">Question style</span>' +
+        '<input type="number" id="faq-question-fontsize" class="editor-input" style="width:68px;" min="8" max="36" value="' + (qStyle.fontSize || 15) + '">' +
+        '<span style="font-size:12px;color:#666;">px</span>' +
+        '<button id="faq-question-bold-btn" class="btn btn-sm" onclick="toggleFaqQuestionBold()" style="font-weight:bold;min-width:36px;' + qBoldBtnStyle + '">B</button>' +
+        '<span style="font-size:12px;color:#666;margin-left:8px;">Answer style</span>' +
+        '<input type="number" id="faq-answer-fontsize" class="editor-input" style="width:68px;" min="8" max="36" value="' + (aStyle.fontSize || 15) + '">' +
+        '<span style="font-size:12px;color:#666;">px</span>' +
+      '</div>' +
+      '<div id="faq-cards-editor">' + faqCardsHtml + '</div>' +
+      '<div style="margin-top:12px;">' +
+        '<button class="btn btn-sm btn-outline" onclick="addFaqCard()">+ Add FAQ</button>' +
       '</div>' +
     '</div>';
 }
 
-async function saveContactChanges() {
+function readContactFromDOM() {
+  if (!config.contact) return;
   var emailInput = document.getElementById('contact-email-input');
   var altInput = document.getElementById('contact-alt-input');
-  var bioInput = document.getElementById('contact-bio-input');
   var igVisible = document.getElementById('contact-ig-visible');
   if (emailInput) config.contact.email = emailInput.value.trim();
   if (altInput) config.contact.altText = altInput.value.trim();
-  var bioFontSize = document.getElementById('contact-bio-fontsize');
-  if (bioInput) config.contact.bio = bioInput.value.trim();
-  if (bioFontSize) config.contact.bioFontSize = bioFontSize.value;
   if (igVisible) config.contact.igVisible = igVisible.checked;
+  if (!config.contact.faq) config.contact.faq = { items: [], questionStyle: {}, answerStyle: {} };
+  var qFontSizeEl = document.getElementById('faq-question-fontsize');
+  if (qFontSizeEl) config.contact.faq.questionStyle.fontSize = parseInt(qFontSizeEl.value, 10) || 15;
+  var aFontSizeEl = document.getElementById('faq-answer-fontsize');
+  if (aFontSizeEl) config.contact.faq.answerStyle.fontSize = parseInt(aFontSizeEl.value, 10) || 15;
+  var cards = document.querySelectorAll('#faq-cards-editor .card-editor');
+  config.contact.faq.items = Array.from(cards).map(function(card) {
+    var id = card.dataset.faqId;
+    var qEl = document.getElementById('faq-question-' + id);
+    var aEl = document.getElementById('faq-answer-' + id);
+    return { id: id, question: qEl ? qEl.value.trim() : '', answer: aEl ? aEl.value.trim() : '' };
+  });
+}
+
+async function saveContactChanges() {
+  readContactFromDOM();
   setStatus('contact', 'saving');
   var ok = await saveConfig();
   setStatus('contact', ok ? 'saved' : 'error');
   if (ok) toast('Contact info updated!');
+}
+
+function toggleFaqQuestionBold() {
+  if (!config.contact || !config.contact.faq) return;
+  config.contact.faq.questionStyle = config.contact.faq.questionStyle || {};
+  config.contact.faq.questionStyle.bold = !config.contact.faq.questionStyle.bold;
+  var btn = document.getElementById('faq-question-bold-btn');
+  if (btn) {
+    btn.style.background = config.contact.faq.questionStyle.bold ? '#333' : '';
+    btn.style.color = config.contact.faq.questionStyle.bold ? '#fff' : '';
+    btn.style.borderColor = config.contact.faq.questionStyle.bold ? '#333' : '';
+  }
+}
+
+function addFaqCard() {
+  readContactFromDOM();
+  var newItem = { id: 'faq-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), question: '', answer: '' };
+  if (!config.contact.faq) config.contact.faq = { items: [], questionStyle: {}, answerStyle: {} };
+  if (!config.contact.faq.items) config.contact.faq.items = [];
+  config.contact.faq.items.push(newItem);
+  renderContactPanel();
+  var qInput = document.getElementById('faq-question-' + newItem.id);
+  if (qInput) { qInput.focus(); qInput.select(); }
+}
+
+function removeFaqCard(id) {
+  if (!config.contact || !config.contact.faq || !config.contact.faq.items) return;
+  readContactFromDOM();
+  var item = config.contact.faq.items.find(function(x) { return x.id === id; });
+  var q = item ? (item.question || 'this FAQ') : 'this FAQ';
+  confirmAction = function() {
+    config.contact.faq.items = config.contact.faq.items.filter(function(x) { return x.id !== id; });
+    renderContactPanel();
+  };
+  document.getElementById('confirmTitle').textContent = 'Delete FAQ?';
+  document.getElementById('confirmDesc').textContent = 'Remove "' + q + '"? Remember to click Save Changes.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function moveFaqCard(id, direction) {
+  if (!config.contact || !config.contact.faq || !config.contact.faq.items) return;
+  readContactFromDOM();
+  var items = config.contact.faq.items;
+  var idx = items.findIndex(function(x) { return x.id === id; });
+  if (idx < 0) return;
+  var newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  var temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderContactPanel();
 }
 
 function uploadContactPhoto() {

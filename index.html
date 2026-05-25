@@ -111,10 +111,13 @@
   .modal-close:hover { background: #333; }
 
   .contact-section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; align-items: center; justify-content: center; background: var(--white); }
-  .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; padding: 120px 48px 80px; max-width: 1400px; align-items: start; margin: 0 auto; }
-  .contact-form-side { width: 100%; padding-top: 20px; }
-  .contact-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
-  .contact-photo-side img { width: 100%; max-width: 480px; height: auto; object-fit: cover; display: block; }
+  .contact-layout { width: 100%; padding: 120px 48px 80px; max-width: 700px; margin: 0 auto; }
+  .contact-form-side { width: 100%; }
+  .faq-section { margin-top: 48px; }
+  .faq-item { border-top: 1px solid #e0e0e0; padding: 24px 0; }
+  .faq-item:last-child { padding-bottom: 0; }
+  .faq-question { font-size: 15px; font-weight: 700; color: #555; margin-bottom: 10px; line-height: 1.5; }
+  .faq-answer { font-size: 15px; color: #888; line-height: 1.75; margin: 0; }
   .contact-form { display: flex; flex-direction: column; gap: 24px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
@@ -148,7 +151,7 @@
     .sub-gallery-section .masonry { grid-template-columns: repeat(2, 1fr); }
     nav { padding: 0 32px; }
     .gallery-section, .sub-gallery-section { padding-left: 32px; padding-right: 32px; }
-    .contact-layout { padding: 100px 32px 60px; gap: 40px; }
+    .contact-layout { padding: 100px 32px 60px; }
     .form-row { grid-template-columns: 1fr; }
   }
   @media (max-width: 768px) {
@@ -159,8 +162,7 @@
     .nav-links.mobile-open { display: flex; flex-direction: column; position: fixed; inset: 0; background: var(--white); color: var(--black); justify-content: center; align-items: center; gap: 36px; z-index: 150; }
     .nav-links.mobile-open a { font-size: 20px; }
     nav.dark .nav-links.mobile-open { background: rgba(20,20,20,0.97); color: var(--white); }
-    .contact-layout { grid-template-columns: 1fr; }
-    .contact-photo-side img { max-width: 360px; }
+    .contact-layout { padding: 100px 20px 60px; }
     .masonry-item::after { display: none; }
     .masonry-item:hover::after { background: rgba(0,0,0,0); }
     .masonry-item:hover img { transform: none; }
@@ -287,7 +289,6 @@
 <div class="section contact-section" id="contact">
   <div class="contact-layout">
     <div class="contact-form-side">
-      <p id="contactBio" style="color:#888;font-size:15px;line-height:1.75;margin-bottom:32px;display:none;white-space:pre-wrap;"></p>
       <form class="contact-form" onsubmit="handleSubmit(event)">
         <div class="form-group">
           <div class="form-group-label-row"><label for="name">Name</label><span class="required-text">(required)</span></div>
@@ -307,9 +308,7 @@
         Please fill out contact form or you can reach me at<br>
         <a href="mailto:David@davidchenphotography.com">David@davidchenphotography.com</a>
       </div>
-    </div>
-    <div class="contact-photo-side">
-      <img src="photos/david-portrait.webp" alt="David Chen - Photographer" id="contactPhoto">
+      <div class="faq-section" id="faqSection"></div>
     </div>
   </div>
 </div>
@@ -629,26 +628,31 @@ function renderPricing(config) {
 function renderContact(config) {
   var contact = config.contact;
   if (!contact) return;
-  var fontSize = (contact.bioFontSize || '15') + 'px';
   var altEl = document.getElementById('contactAlt');
   if (altEl) {
     altEl.innerHTML = escHtml(contact.altText) + '<br><a href="mailto:' + escHtml(contact.email) + '">' + escHtml(contact.email) + '</a>';
-    altEl.style.fontSize = fontSize;
-  }
-  var bioEl = document.getElementById('contactBio');
-  if (bioEl && contact.bio) {
-    bioEl.innerHTML = escHtml(contact.bio).replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
-    bioEl.style.fontSize = fontSize;
-    bioEl.style.display = '';
   }
   if (contact.photoPublicId) {
-    var photoEl = document.getElementById('contactPhoto');
-    if (photoEl) photoEl.src = IMG_BASE + FULL_OPTS + contact.photoPublicId;
     var aboutPhotoEl = document.getElementById('aboutPhoto');
     if (aboutPhotoEl) aboutPhotoEl.src = IMG_BASE + FULL_OPTS + contact.photoPublicId;
   }
   var igItem = document.getElementById('igNavItem');
   if (igItem) igItem.style.display = contact.igVisible ? '' : 'none';
+  var faqEl = document.getElementById('faqSection');
+  if (faqEl && contact.faq && contact.faq.items && contact.faq.items.length > 0) {
+    var qStyle = contact.faq.questionStyle || {};
+    var aStyle = contact.faq.answerStyle || {};
+    faqEl.innerHTML = contact.faq.items.map(function(item) {
+      var qExtra = '';
+      if (qStyle.fontSize) qExtra += 'font-size:' + qStyle.fontSize + 'px;';
+      if (qStyle.bold === false) qExtra += 'font-weight:400;';
+      var aExtra = aStyle.fontSize ? 'font-size:' + aStyle.fontSize + 'px;' : '';
+      return '<div class="faq-item">' +
+        '<p class="faq-question"' + (qExtra ? ' style="' + qExtra + '"' : '') + '>' + escHtml(item.question || '') + '</p>' +
+        '<p class="faq-answer"' + (aExtra ? ' style="' + aExtra + '"' : '') + '>' + escHtml(item.answer || '') + '</p>' +
+      '</div>';
+    }).join('');
+  }
 }
 
 // ── Dynamic About ────────────────────────────────────────────────────────────
