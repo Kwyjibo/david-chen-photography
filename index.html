@@ -675,6 +675,9 @@ function renderAbout(config) {
     bioEl.innerHTML = paragraphs
       .map(function(p) { return '<p>' + escHtml(p) + '</p>'; })
       .join('');
+    if (about.bioStyle && about.bioStyle.fontSize) {
+      bioEl.style.fontSize = about.bioStyle.fontSize + 'px';
+    }
   }
 
   if (gridEl && about.testimonials) {
@@ -684,6 +687,11 @@ function renderAbout(config) {
         '<p class="testimonial-name">' + escHtml(t.name || '') + '</p>' +
       '</div>';
     }).join('');
+    if (about.testimonialStyle && about.testimonialStyle.fontSize) {
+      gridEl.querySelectorAll('.testimonial-text').forEach(function(el) {
+        el.style.fontSize = about.testimonialStyle.fontSize + 'px';
+      });
+    }
   }
 }
 

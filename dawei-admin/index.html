@@ -442,6 +442,12 @@ function migrateConfig(cfg) {
   if (!cfg.about.labelStyle) {
     cfg.about.labelStyle = { fontSize: 14, bold: true };
   }
+  if (!cfg.about.bioStyle) {
+    cfg.about.bioStyle = { fontSize: 15 };
+  }
+  if (!cfg.about.testimonialStyle) {
+    cfg.about.testimonialStyle = { fontSize: 15 };
+  }
   return cfg;
 }
 
@@ -1685,6 +1691,11 @@ function renderAboutPanel() {
       '<label class="editor-label">Bio</label>' +
       '<textarea class="editor-textarea" id="about-bio-input" rows="8">' + escHtml(about.bio || '') + '</textarea>' +
       '<div class="editor-hint">Paragraphs are separated by a blank line (press Enter twice).</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;">' +
+        '<label style="font-size:12px;color:#666;white-space:nowrap;">Font size</label>' +
+        '<input type="number" id="about-bio-fontsize" class="editor-input" style="width:68px;" min="8" max="36" value="' + ((about.bioStyle && about.bioStyle.fontSize) || 15) + '">' +
+        '<span style="font-size:12px;color:#666;">px</span>' +
+      '</div>' +
     '</div>' +
     '<div class="editor-section">' +
       '<label class="editor-label">Section Label Style</label>' +
@@ -1699,6 +1710,11 @@ function renderAboutPanel() {
     '<div class="editor-hint" style="margin-bottom:24px;">To change the About photo, go to the <strong>Contact</strong> tab &rarr; Contact Photo.</div>' +
     '<div class="editor-section">' +
       '<label class="editor-label">Testimonials</label>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">' +
+        '<label style="font-size:12px;color:#666;white-space:nowrap;">Font size</label>' +
+        '<input type="number" id="about-testimonial-fontsize" class="editor-input" style="width:68px;" min="8" max="36" value="' + ((about.testimonialStyle && about.testimonialStyle.fontSize) || 15) + '">' +
+        '<span style="font-size:12px;color:#666;">px</span>' +
+      '</div>' +
       '<div id="about-testimonials-editor">';
   (about.testimonials || []).forEach(function(t, i) {
     html += buildTestimonialCardHTML(t, i, about.testimonials.length);
@@ -1732,6 +1748,16 @@ function readAboutFromDOM() {
   if (fontSizeEl) {
     if (!config.about.labelStyle) config.about.labelStyle = {};
     config.about.labelStyle.fontSize = parseInt(fontSizeEl.value, 10) || 14;
+  }
+  var bioFontSizeEl = document.getElementById('about-bio-fontsize');
+  if (bioFontSizeEl) {
+    if (!config.about.bioStyle) config.about.bioStyle = {};
+    config.about.bioStyle.fontSize = parseInt(bioFontSizeEl.value, 10) || 15;
+  }
+  var testimonialFontSizeEl = document.getElementById('about-testimonial-fontsize');
+  if (testimonialFontSizeEl) {
+    if (!config.about.testimonialStyle) config.about.testimonialStyle = {};
+    config.about.testimonialStyle.fontSize = parseInt(testimonialFontSizeEl.value, 10) || 15;
   }
   var container = document.getElementById('about-testimonials-editor');
   if (container) {
