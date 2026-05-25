@@ -201,9 +201,9 @@
 
   /* ── About Section ── */
   .about-section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; background: var(--white); }
-  .about-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; padding: 120px 48px 60px; max-width: 1400px; align-items: start; margin: 0 auto; }
-  .about-bio-side { width: 100%; padding-top: 20px; }
-  .about-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
+  .about-inner { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "bio photo" "testimonials testimonials"; column-gap: 60px; width: 100%; padding: 120px 48px 80px; max-width: 1400px; align-items: start; margin: 0 auto; }
+  .about-bio-side { grid-area: bio; padding-top: 20px; }
+  .about-photo-side { grid-area: photo; display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
   .about-photo-side img { width: 100%; max-width: 480px; height: auto; object-fit: cover; display: block; }
   .about-section-label { font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #aaa; margin-bottom: 24px; }
   .about-bio { color: #888; font-size: 15px; line-height: 1.75; }
@@ -211,7 +211,7 @@
   .about-bio p:last-child { margin-bottom: 0; }
 
   /* ── Testimonials ── */
-  .testimonials-wrap { width: 100%; max-width: 1400px; margin: 0 auto; padding: 40px 48px 80px; }
+  .testimonials-wrap { grid-area: testimonials; }
   .testimonials-label { font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #aaa; margin-bottom: 40px; border-top: 1px solid #e0e0e0; padding-top: 40px; }
   .testimonials-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
   .testimonial-card { border-top: 1px solid #e0e0e0; padding-top: 24px; }
@@ -219,17 +219,18 @@
   .testimonial-name { font-size: 12px; font-weight: 700; color: #aaa; letter-spacing: 2px; text-transform: uppercase; }
 
   @media (max-width: 1024px) {
-    .about-layout { padding: 100px 32px 60px; gap: 40px; }
-    .testimonials-wrap { padding: 40px 32px 60px; }
+    .about-inner { padding: 100px 32px 80px; column-gap: 40px; }
   }
   @media (max-width: 768px) {
-    .about-layout { grid-template-columns: 1fr; }
+    .about-inner { display: flex; flex-direction: column; padding: 100px 20px 60px; }
+    .about-bio-side { order: 1; }
+    .testimonials-wrap { order: 2; }
+    .about-photo-side { order: 3; }
     .about-photo-side img { max-width: 360px; }
     .testimonials-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 480px) {
-    .about-layout { padding: 100px 20px 60px; }
-    .testimonials-wrap { padding: 40px 20px 60px; }
+    .about-inner { padding: 100px 20px 60px; }
   }
 </style>
 </head>
@@ -272,7 +273,7 @@
 </div>
 
 <div class="section about-section" id="about">
-  <div class="about-layout">
+  <div class="about-inner">
     <div class="about-bio-side">
       <p class="about-section-label">About Me</p>
       <div class="about-bio" id="aboutBio"></div>
@@ -280,10 +281,10 @@
     <div class="about-photo-side">
       <img src="photos/david-portrait.webp" alt="David Chen - Photographer" id="aboutPhoto">
     </div>
-  </div>
-  <div class="testimonials-wrap">
-    <p class="testimonials-label">What Clients Say</p>
-    <div class="testimonials-grid" id="testimonialsGrid"></div>
+    <div class="testimonials-wrap">
+      <p class="testimonials-label">What Clients Say</p>
+      <div class="testimonials-grid" id="testimonialsGrid"></div>
+    </div>
   </div>
 </div>
 
