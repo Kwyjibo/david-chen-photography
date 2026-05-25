@@ -48,7 +48,9 @@
   nav { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; z-index: 100; transition: background 0.3s, color 0.3s; }
   nav.light { background: var(--white); color: var(--black); }
   nav.dark { background: transparent; color: var(--white); }
-  .logo { display: flex; align-items: center; }
+  .logo { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .nav-subtitle { font-size: 9px; letter-spacing: 1.8px; text-transform: uppercase; color: #999; font-weight: 400; white-space: nowrap; line-height: 1; }
+  nav.dark .nav-subtitle { color: rgba(255,255,255,0.55); }
   .logo-img { height: 40px; width: auto; object-fit: contain; transition: opacity 0.3s, height 0.3s; }
   nav.large-logo .logo-img { height: 80px; }
   nav.large-logo { height: 100px; }
@@ -241,7 +243,7 @@
 </div>
 
 <nav class="light overview-nav" id="mainNav">
-  <a href="#" class="logo" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-img"></a>
+  <a href="#" class="logo" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-img"><span class="nav-subtitle">Westchester, NY Children Photographer</span></a>
   <a href="#" class="logo-overview" onclick="showFirstGallery(); return false;"><img src="logo.png" alt="David Chen Photography" class="logo-overview-img"></a>
   <ul class="nav-links" id="navLinks">
     <li id="pricingNavItem"><a href="#" data-section="pricing" onclick="showSection('pricing'); return false;">Pricing</a></li>
