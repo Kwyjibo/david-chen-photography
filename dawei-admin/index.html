@@ -546,6 +546,14 @@ function renderTabs() {
   contactTab.onclick = function() { switchTab('contact'); };
   tabBar.appendChild(contactTab);
 
+  // About tab
+  var aboutTab = document.createElement('button');
+  aboutTab.className = 'tab';
+  aboutTab.textContent = 'About';
+  aboutTab.dataset.galleryId = 'about';
+  aboutTab.onclick = function() { switchTab('about'); };
+  tabBar.appendChild(aboutTab);
+
   // Activate first tab
   currentTab = config.publicGalleries.length > 0 ? config.publicGalleries[0].id : 'private';
   if (config.publicGalleries.length === 0) {
@@ -555,6 +563,7 @@ function renderTabs() {
   // Render page editors
   renderPricingPanel();
   renderContactPanel();
+  renderAboutPanel();
 }
 
 function switchTab(id) {
