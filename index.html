@@ -688,7 +688,7 @@ function renderAbout(config) {
       '</div>';
     }).join('');
     if (about.testimonialStyle && about.testimonialStyle.fontSize) {
-      gridEl.querySelectorAll('.testimonial-text').forEach(function(el) {
+      gridEl.querySelectorAll('.testimonial-text, .testimonial-name').forEach(function(el) {
         el.style.fontSize = about.testimonialStyle.fontSize + 'px';
       });
     }
