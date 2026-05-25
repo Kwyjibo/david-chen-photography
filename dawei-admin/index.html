@@ -1641,6 +1641,126 @@ function uploadContactPhoto() {
   });
 }
 
+// ── About Editor ───────────────────────────────────────────────────────────────
+function buildTestimonialCardHTML(t, index, total) {
+  var html =
+    '<div class="card-editor" data-testimonial-id="' + t.id + '">' +
+      '<div class="card-editor-header">' +
+        '<input type="text" class="editor-input" id="testimonial-name-' + t.id + '" value="' + escHtml(t.name) + '" placeholder="Client name">' +
+        '<div class="card-editor-actions">';
+  if (index > 0) {
+    html += '<button class="btn btn-sm btn-outline" onclick="moveTestimonialCard(\'' + t.id + '\', -1)" title="Move up">↑</button>';
+  }
+  if (index < total - 1) {
+    html += '<button class="btn btn-sm btn-outline" onclick="moveTestimonialCard(\'' + t.id + '\', 1)" title="Move down">↓</button>';
+  }
+  html +=
+        '<button class="btn btn-sm btn-danger" onclick="removeTestimonialCard(\'' + t.id + '\')">Delete</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="editor-section" style="margin-bottom:0;">' +
+        '<textarea class="editor-textarea" id="testimonial-text-' + t.id + '" rows="4" placeholder="Client quote">' + escHtml(t.text) + '</textarea>' +
+      '</div>' +
+    '</div>';
+  return html;
+}
+
+function renderAboutPanel() {
+  var panel = document.getElementById('panel-about');
+  if (!panel || !config.about) return;
+  var about = config.about;
+  var html =
+    '<div class="toolbar">' +
+      '<h2>About Page</h2>' +
+      '<span class="save-status" id="status-about"></span>' +
+      '<button class="btn btn-sm btn-success" onclick="saveAboutChanges()">Save Changes</button>' +
+    '</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Bio</label>' +
+      '<textarea class="editor-textarea" id="about-bio-input" rows="8">' + escHtml(about.bio || '') + '</textarea>' +
+      '<div class="editor-hint">Paragraphs are separated by a blank line (press Enter twice).</div>' +
+    '</div>' +
+    '<div class="editor-hint" style="margin-bottom:24px;">To change the About photo, go to the <strong>Contact</strong> tab &rarr; Contact Photo.</div>' +
+    '<div class="editor-section">' +
+      '<label class="editor-label">Testimonials</label>' +
+      '<div id="about-testimonials-editor">';
+  (about.testimonials || []).forEach(function(t, i) {
+    html += buildTestimonialCardHTML(t, i, about.testimonials.length);
+  });
+  html +=
+      '</div>' +
+      '<div style="margin-top:16px;">' +
+        '<button class="btn btn-sm btn-outline" onclick="addTestimonialCard()">+ Add Testimonial</button>' +
+      '</div>' +
+    '</div>';
+  panel.innerHTML = html;
+}
+
+function readAboutFromDOM() {
+  if (!config.about) return;
+  var bioInput = document.getElementById('about-bio-input');
+  if (bioInput) config.about.bio = bioInput.value;
+  var cards = document.querySelectorAll('#about-testimonials-editor .card-editor');
+  config.about.testimonials = Array.from(cards).map(function(card) {
+    var id = card.dataset.testimonialId;
+    var nameEl = document.getElementById('testimonial-name-' + id);
+    var textEl = document.getElementById('testimonial-text-' + id);
+    return {
+      id: id,
+      name: nameEl ? nameEl.value.trim() : '',
+      text: textEl ? textEl.value.trim() : ''
+    };
+  });
+}
+
+async function saveAboutChanges() {
+  readAboutFromDOM();
+  setStatus('about', 'saving');
+  var ok = await saveConfig();
+  setStatus('about', ok ? 'saved' : 'error');
+  if (ok) toast('About page updated!');
+}
+
+function addTestimonialCard() {
+  readAboutFromDOM();
+  var newT = {
+    id: 't-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name: '',
+    text: ''
+  };
+  if (!config.about.testimonials) config.about.testimonials = [];
+  config.about.testimonials.push(newT);
+  renderAboutPanel();
+  var nameInput = document.getElementById('testimonial-name-' + newT.id);
+  if (nameInput) nameInput.focus();
+}
+
+function removeTestimonialCard(id) {
+  readAboutFromDOM();
+  var t = config.about.testimonials.find(function(t) { return t.id === id; });
+  var name = t ? (t.name || 'this testimonial') : 'this testimonial';
+  confirmAction = function() {
+    config.about.testimonials = config.about.testimonials.filter(function(t) { return t.id !== id; });
+    renderAboutPanel();
+  };
+  document.getElementById('confirmTitle').textContent = 'Delete testimonial?';
+  document.getElementById('confirmDesc').textContent = 'Remove "' + name + '" testimonial? Remember to click Save Changes.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function moveTestimonialCard(id, direction) {
+  readAboutFromDOM();
+  var testimonials = config.about.testimonials;
+  var idx = testimonials.findIndex(function(t) { return t.id === id; });
+  if (idx < 0) return;
+  var newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= testimonials.length) return;
+  var temp = testimonials[idx];
+  testimonials[idx] = testimonials[newIdx];
+  testimonials[newIdx] = temp;
+  renderAboutPanel();
+}
+
 // ── Copy / Move between galleries ────────────────────────────────────────────
 var copyMoveState = null;
 
