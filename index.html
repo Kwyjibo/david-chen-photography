@@ -643,7 +643,7 @@ function renderContact(config) {
   if (faqEl && contact.faq && contact.faq.items && contact.faq.items.length > 0) {
     var qStyle = contact.faq.questionStyle || {};
     var aStyle = contact.faq.answerStyle || {};
-    faqEl.innerHTML = '<p class="faq-label">FAQ</p>' + contact.faq.items.map(function(item) {
+    faqEl.innerHTML = '<p class="faq-label">FAQs</p>' + contact.faq.items.map(function(item) {
       var qExtra = '';
       if (qStyle.fontSize) qExtra += 'font-size:' + qStyle.fontSize + 'px;';
       if (qStyle.bold === false) qExtra += 'font-weight:400;';
