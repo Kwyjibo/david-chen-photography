@@ -200,8 +200,8 @@
   .about-section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; background: var(--white); }
   .about-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; padding: 120px 48px 60px; max-width: 1400px; align-items: start; margin: 0 auto; }
   .about-bio-side { width: 100%; padding-top: 20px; }
-  .about-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; align-self: end; }
-  .about-photo-side img { width: 100%; max-width: 480px; max-height: 400px; height: auto; object-fit: cover; object-position: top; display: block; }
+  .about-photo-side { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
+  .about-photo-side img { width: 100%; max-width: 480px; height: auto; object-fit: cover; display: block; }
   .about-section-label { font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #aaa; margin-bottom: 24px; }
   .about-bio { color: #888; font-size: 15px; line-height: 1.75; }
   .about-bio p { margin-bottom: 20px; }
@@ -657,6 +657,16 @@ function renderAbout(config) {
   if (!about) return;
   var bioEl = document.getElementById('aboutBio');
   var gridEl = document.getElementById('testimonialsGrid');
+
+  var labelStyle = about.labelStyle || {};
+  var fontSize = labelStyle.fontSize ? (labelStyle.fontSize + 'px') : '';
+  var fontWeight = labelStyle.bold === false ? '400' : (labelStyle.bold ? '700' : '');
+  if (fontSize || fontWeight) {
+    document.querySelectorAll('.about-section-label, .testimonials-label').forEach(function(el) {
+      if (fontSize) el.style.fontSize = fontSize;
+      if (fontWeight) el.style.fontWeight = fontWeight;
+    });
+  }
 
   if (bioEl && about.bio) {
     var paragraphs = about.bio.split(/\n\n+/)
