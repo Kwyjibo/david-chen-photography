@@ -272,13 +272,7 @@
   <div class="about-layout">
     <div class="about-bio-side">
       <p class="about-section-label">About Me</p>
-      <div class="about-bio">
-        <p>The best family photos don't look like photo sessions. They look like a real day out where everyone was actually having fun and someone happened to be there with a camera.</p>
-        <p>With 15 years of shooting kids and families across Westchester's parks and trails, knowing these locations as well as I do means planning every shoot around the best light, getting the most out of wherever we are, and being ready for the moment right before someone laughs or a kid forgets there's even a camera. A lot of the families I shoot keep coming back, and there's nothing quite like watching the kids grow up through photos.</p>
-        <p>Backyard sessions are also an option for families who prefer shooting close to home. There's something about a familiar space that makes kids more comfortable, and that comfort shows up in the photos.</p>
-        <p>I don't rush, I don't force poses, and I give kids time to warm up to me before I start shooting. Parents are usually surprised by how relaxed the whole thing feels, and how different the photos look because of it.</p>
-        <p>I typically work with kids 5 and up, and if you've been putting off booking because you're convinced your kids won't cooperate, that's exactly the kind of session I'm used to.</p>
-      </div>
+      <div class="about-bio" id="aboutBio"></div>
     </div>
     <div class="about-photo-side">
       <img src="photos/david-portrait.webp" alt="David Chen - Photographer" id="aboutPhoto">
@@ -286,40 +280,7 @@
   </div>
   <div class="testimonials-wrap">
     <p class="testimonials-label">What Clients Say</p>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <p class="testimonial-text">When the gallery hit my inbox I opened it alone at my kitchen table and completely lost it. There was one shot of my daughter laughing with my mom that I will treasure forever. David has this ability to catch the real moments, not the posed stiff ones, and that's what makes his work different. My whole family has been asking for prints and we haven't even had a chance to order them yet.</p>
-        <p class="testimonial-name">Priya S.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">My son is painfully shy around strangers and I fully expected a meltdown within the first five minutes. David got down on his level, cracked a few jokes, and within ten minutes my kid was running up to him like they were best friends. The shots of him actually smiling and being himself are something I've never been able to get before. I don't know how he does it but we are not going back to anyone else.</p>
-        <p class="testimonial-name">Emily D.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">I was nervous about booking a shoot with my two toddlers because they never cooperate for pictures. David was so calm and playful with them the whole time, and somehow he got the most natural, genuine smiles out of both of them. He also kept checking in with me to make sure I was comfortable and having a good time. I will 100% be booking him again next year.</p>
-        <p class="testimonial-name">Ashley R.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">The way David sees light is something else. Our evening shoot had this gorgeous golden glow in so many of the photos and I genuinely don't know how he found the right angles every time. He also took way more shots than I expected, so we had a huge variety to pick from. Our walls are covered in these photos now.</p>
-        <p class="testimonial-name">Megan T.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">David is honestly the most patient photographer I've ever worked with. He never made us feel like we were on a clock and kept suggesting fun new spots around the location we hadn't even thought of. By the end of the session we had so many different looks to choose from. The photos turned out better than I could have imagined.</p>
-        <p class="testimonial-name">Sarah M.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">I had a few specific requests going into our shoot and honestly felt a little awkward asking for them. David was completely unfazed and went out of his way to make every one of them happen, plus added a few ideas of his own that I ended up loving even more. He made the whole experience feel easy and fun instead of stressful. These are the best family photos we have ever taken.</p>
-        <p class="testimonial-name">Mei L.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">Before our shoot David walked me through exactly what to expect, what to wear, how the editing process works and when to expect the final gallery. No surprises, no waiting around wondering what comes next. The pictures came back faster than I expected and every single one was stunning. It felt like he really understood the kind of memories we were trying to capture.</p>
-        <p class="testimonial-name">Lauren K.</p>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">I've worked with photographers who take weeks to deliver and you're left completely in the dark the whole time. David had our full gallery ready so quickly I actually had to double check it was all there. Every photo was edited and looked polished, not like a rough batch he just threw together. He clearly takes his work seriously and it shows.</p>
-        <p class="testimonial-name">Chris W.</p>
-      </div>
-    </div>
+    <div class="testimonials-grid" id="testimonialsGrid"></div>
   </div>
 </div>
 
@@ -690,12 +651,36 @@ function renderContact(config) {
   if (igItem) igItem.style.display = contact.igVisible ? '' : 'none';
 }
 
+// ── Dynamic About ────────────────────────────────────────────────────────────
+function renderAbout(config) {
+  var bioEl = document.getElementById('aboutBio');
+  var gridEl = document.getElementById('testimonialsGrid');
+  if (!config || !config.about) return;
+
+  if (bioEl && config.about.bio) {
+    var paragraphs = config.about.bio.split(/\n\n+/);
+    bioEl.innerHTML = paragraphs
+      .map(function(p) { return '<p>' + escHtml(p.trim()) + '</p>'; })
+      .join('');
+  }
+
+  if (gridEl && config.about.testimonials) {
+    gridEl.innerHTML = config.about.testimonials.map(function(t) {
+      return '<div class="testimonial-card">' +
+        '<p class="testimonial-text">' + escHtml(t.text) + '</p>' +
+        '<p class="testimonial-name">' + escHtml(t.name) + '</p>' +
+      '</div>';
+    }).join('');
+  }
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 (async function init() {
   var config = await fetchConfig();
   buildGalleries(config);
   renderPricing(config);
   renderContact(config);
+  renderAbout(config);
 
   // Determine initial section from URL path
   var path = window.location.pathname.replace(/^\/+|\/+$/g, '');
