@@ -492,7 +492,7 @@ function showSection(name, pushUrl) {
   // Nav style: first gallery gets overview-nav, other galleries get large-logo
   var nav = document.getElementById('mainNav');
   nav.className = 'light';
-  if (name === firstGalleryId || name === 'contact' || name === 'pricing' || name === 'about') {
+  if (name === firstGalleryId) {
     nav.classList.add('overview-nav');
   } else if (allGalleryIds.indexOf(name) !== -1) {
     nav.classList.add('large-logo');
